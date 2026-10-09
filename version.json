@@ -1,1 +1,1 @@
-{"version_code": 400, "version_name": "1.7.4", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.4/goldensky.3.apk", "notes": "Mux for VMess/VLess: faster browsing and video over multiplexed connections."}
+{"version_code": 404, "version_name": "1.7.8", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.8/goldensky.apk", "notes": "VMess/VLess/Trojan link methods: httpupgrade, gRPC serviceName, TCP HTTP obfuscation, ALPN/ECH/allowInsecure params."}
