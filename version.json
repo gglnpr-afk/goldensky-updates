@@ -1,1 +1,1 @@
-{"version_code": 409, "version_name": "1.7.13", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.13/goldensky.5.apk", "notes": "Fix: Select Server crash when subscription updates arrive while the list is loading."}
+{"version_code": 410, "version_name": "1.7.14", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.14/goldensky.6.apk", "notes": "New: bottom-sheet server actions; [host_port]/[ua] payload keywords; private-key SSH login; full ssh:// share links."}
