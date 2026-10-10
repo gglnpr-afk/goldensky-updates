@@ -1,1 +1,1 @@
-{"version_code": 407, "version_name": "1.7.11", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.11/goldensky.3.apk", "notes": "New: update prompt card design, country flag on home server card."}
+{"version_code": 408, "version_name": "1.7.12", "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.7.12/GOLDENSKY.v1.7.12", "notes": "Fix: SSH connection type chips (SSL/SSL+Payload/Proxy/DNS) now tappable."}
