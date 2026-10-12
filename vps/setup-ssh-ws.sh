@@ -60,16 +60,18 @@ echo "password set for $SSH_USER"
 echo "== ws bridge =="
 cat > /usr/local/bin/ssh-ws-bridge.py <<'PYEOF'
 #!/usr/bin/env python3
-"""Minimal WebSocket-upgrade -> SSH bridge.
-Listens on port 80, reads the HTTP Upgrade payload, replies 101,
-then bridges raw TCP to local SSH (22) bidirectionally."""
+"""HTTP-payload -> SSH bridge.
+Listens on port 80, reads and discards the HTTP payload headers,
+then bridges raw TCP to local SSH (22) bidirectionally.
+NOTE: does NOT send a 101 response — JSch expects the SSH banner
+("SSH-2.0-...") as the first bytes, not HTTP. The payload is only
+for DPI bypass; the client never reads a response."""
 import socket
 import threading
 
 LISTEN_PORT = 80
 SSH_HOST = "127.0.0.1"
 SSH_PORT = 22
-RESP_101 = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n"
 
 def pipe(a, b):
     try:
@@ -99,7 +101,7 @@ def handle(client):
                 client.close()
                 return
         client.settimeout(None)
-        client.sendall(RESP_101)
+        # No 101 reply — go straight to SSH so JSch sees the banner first.
         ssh = socket.create_connection((SSH_HOST, SSH_PORT), timeout=10)
         t1 = threading.Thread(target=pipe, args=(client, ssh), daemon=True)
         t2 = threading.Thread(target=pipe, args=(ssh, client), daemon=True)
