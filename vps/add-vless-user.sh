@@ -1,1 +1,40 @@
-IyEvYmluL2Jhc2gKIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KIyBBZGQgb25lIFZMRVNTIHVzZXIgdG8gdGhlIEdPTERFTlNLWSBWUFMgYW5kIHByaW50IHRoZWlyIGxpbmsuCiMgVXNhZ2U6ICBiYXNoIGFkZC12bGVzcy11c2VyLnNoIDxuYW1lPgojIEV4YW1wbGU6IGJhc2ggYWRkLXZsZXNzLXVzZXIuc2gga28tYXVuZwojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQpzZXQgLWUKCmlmIFsgIiQoaWQgLXUpIiAhPSAiMCIgXTsgdGhlbgogIGVjaG8gIlJ1biBhcyByb290OiAgc3VkbyBiYXNoIGFkZC12bGVzcy11c2VyLnNoIDxuYW1lPiIKICBleGl0IDEKZmkKCk5BTUU9JHsxOi11c2VyfQpVVUlEPSQoeHJheSB1dWlkKQpQVUI9JChjYXQgL3Jvb3Qvdmxlc3MtcHVia2V5LnR4dCkKU0lEPSQoY2F0IC9yb290L3ZsZXNzLXNob3J0aWQudHh0KQpJUD0kKGN1cmwgLXMgLS1tYXgtdGltZSAxMCBodHRwczovL2FwaS5pcGlmeS5vcmcpCgpweXRob24zIC0gIiRVVUlEIiA8PCdQWUVPRicKaW1wb3J0IGpzb24sIHN5cwp1dWlkID0gc3lzLmFyZ3ZbMV0KcCA9ICcvdXNyL2xvY2FsL2V0Yy94cmF5L2NvbmZpZy5qc29uJwpjID0ganNvbi5sb2FkKG9wZW4ocCkpCmNsaWVudHMgPSBjWydpbmJvdW5kcyddWzBdWydzZXR0aW5ncyddWydjbGllbnRzJ10KaWYgbm90IGFueSh4LmdldCgnaWQnKSA9PSB1dWlkIGZvciB4IGluIGNsaWVudHMpOgogICAgY2xpZW50cy5hcHBlbmQoeyJpZCI6IHV1aWQsICJmbG93IjogInh0bHMtcnByeC12aXNpb24ifSkKICAgIGpzb24uZHVtcChjLCBvcGVuKHAsICd3JyksIGluZGVudD0yKQogICAgcHJpbnQoInVzZXIgYWRkZWQ6IiwgdXVpZCkKZWxzZToKICAgIHByaW50KCJ1c2VyIGFscmVhZHkgZXhpc3RzIikKUFlFT0YKCnN5c3RlbWN0bCByZXN0YXJ0IHhyYXkKc2xlZXAgMQoKZWNobyAiIgplY2hvICI9PT09PT09PT09PT09PT09PT09PSBMSU5LIEZPUiAke05BTUV9ID09PT09PT09PT09PT09PT09PT09IgplY2hvICJ2bGVzczovLyR7VVVJRH1AJHtJUH06NDQzP2VuY3J5cHRpb249bm9uZSZmbG93PXh0bHMtcnByeC12aXNpb24mc2VjdXJpdHk9cmVhbGl0eSZzbmk9d3d3Lm1pY3Jvc29mdC5jb20mZnA9Y2hyb21lJnBiaz0ke1BVQn0mc2lkPSR7U0lEfSMke05BTUV9IgplY2hvICI9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0iCg==
+#!/bin/bash
+# ============================================================
+# Add one VLESS user to the GOLDENSKY VPS and print their link.
+# Usage:  bash add-vless-user.sh <name>
+# Example: bash add-vless-user.sh ko-aung
+# ============================================================
+set -e
+
+if [ "$(id -u)" != "0" ]; then
+  echo "Run as root:  sudo bash add-vless-user.sh <name>"
+  exit 1
+fi
+
+NAME=${1:-user}
+UUID=$(xray uuid)
+PUB=$(cat /root/vless-pubkey.txt)
+SID=$(cat /root/vless-shortid.txt)
+IP=$(curl -s --max-time 10 https://api.ipify.org)
+
+python3 - "$UUID" <<'PYEOF'
+import json, sys
+uuid = sys.argv[1]
+p = '/usr/local/etc/xray/config.json'
+c = json.load(open(p))
+clients = c['inbounds'][0]['settings']['clients']
+if not any(x.get('id') == uuid for x in clients):
+    clients.append({"id": uuid, "flow": "xtls-rprx-vision"})
+    json.dump(c, open(p, 'w'), indent=2)
+    print("user added:", uuid)
+else:
+    print("user already exists")
+PYEOF
+
+systemctl restart xray
+sleep 1
+
+echo ""
+echo "==================== LINK FOR ${NAME} ===================="
+echo "vless://${UUID}@${IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUB}&sid=${SID}#${NAME}"
+echo "========================================================="
