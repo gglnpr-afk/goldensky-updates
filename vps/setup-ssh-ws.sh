@@ -39,11 +39,22 @@ apt-get update -qq
 apt-get install -y -qq openssh-server python3 ufw > /dev/null
 
 echo "== sshd =="
-# Make sure password auth is enabled
+# Make sure password auth is enabled (main config + any cloudimg overrides).
+# NOTE: sshd_config.d/*.conf is Included at the TOP of sshd_config and the
+# FIRST value wins, so a cloudimg file with "PasswordAuthentication no"
+# would override the main file. Use a 00- override to win.
 if grep -q "^#*PasswordAuthentication" /etc/ssh/sshd_config; then
   sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 else
   echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+fi
+mkdir -p /etc/ssh/sshd_config.d
+printf 'PasswordAuthentication yes\n' > /etc/ssh/sshd_config.d/00-goldensky.conf
+# Verify effective config
+if /usr/sbin/sshd -T 2>/dev/null | grep -qi "^passwordauthentication yes"; then
+  echo "sshd effective config: PasswordAuthentication yes"
+else
+  echo "WARN: PasswordAuthentication may still be off — check sshd_config.d/"
 fi
 systemctl enable ssh > /dev/null 2>&1 || true
 systemctl restart ssh
