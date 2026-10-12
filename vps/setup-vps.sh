@@ -1,1 +1,83 @@
-IyEvYmluL2Jhc2gKIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KIyBHT0xERU5TS1kgVlBTIG9uZS1zaG90IHNldHVwCiMgSW5zdGFsbHMgWHJheSArIGNvbmZpZ3VyZXMgVkxFU1MgKyBSRUFMSVRZIG9uIHBvcnQgNDQzLgojIC0gVWJ1bnR1IDIyLjA0IChvciAyMC4wNC8yNC4wNCksIHJ1biBhcyByb290CiMgLSBObyBkb21haW4gbmFtZSBuZWVkZWQgKFJFQUxJVFkgY2Ftb3VmbGFnZXMgYXMgbWljcm9zb2Z0LmNvbSkKIyBVc2FnZTogIGJhc2ggc2V0dXAtdnBzLnNoCiMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CnNldCAtZQoKaWYgWyAiJChpZCAtdSkiICE9ICIwIiBdOyB0aGVuCiAgZWNobyAiUnVuIGFzIHJvb3Q6ICBzdWRvIGJhc2ggc2V0dXAtdnBzLnNoIgogIGV4aXQgMQpmaQoKZWNobyAiPT0gMS81IHBhY2thZ2VzID09IgphcHQtZ2V0IHVwZGF0ZSAtcXEKYXB0LWdldCBpbnN0YWxsIC15IC1xcSBjdXJsIG9wZW5zc2wgPiAvZGV2L251bGwKCmVjaG8gIj09IDIvNSBpbnN0YWxsIFhyYXkgPT0iCmJhc2ggPChjdXJsIC1MIC0tbWF4LXRpbWUgMTIwIGh0dHBzOi8vZ2l0aHViLmNvbS9YVExTL1hyYXktaW5zdGFsbC9yYXcvbWFpbi9pbnN0YWxsLXJlbGVhc2Uuc2gpCgplY2hvICI9PSAzLzUgZmlyZXdhbGwgPT0iCnVmdyBhbGxvdyA0NDMvdGNwID4gL2Rldi9udWxsIDI+JjEgfHwgdHJ1ZQojIE5PVEU6IGFsc28gb3BlbiBUQ1AgNDQzIGluIHlvdXIgcHJvdmlkZXIncyBmaXJld2FsbC9zZWN1cml0eS1ncm91cCBwYW5lbC4KCmVjaG8gIj09IDQvNSBrZXlzID09IgpVVUlEPSQoeHJheSB1dWlkKQpLRVlTPSQoeHJheSB4MjU1MTkpClBSSVY9JChlY2hvICIkS0VZUyIgfCBncmVwICJQcml2YXRlIGtleSIgfCBhd2sgJ3twcmludCAkM30nKQpQVUI9JChlY2hvICIkS0VZUyIgfCBncmVwICJQdWJsaWMga2V5IiB8IGF3ayAne3ByaW50ICQzfScpClNJRD0kKG9wZW5zc2wgcmFuZCAtaGV4IDgpCklQPSQoY3VybCAtcyAtLW1heC10aW1lIDEwIGh0dHBzOi8vYXBpLmlwaWZ5Lm9yZykKWyAteiAiJElQIiBdICYmIHsgZWNobyAiQ291bGQgbm90IGRldGVjdCBzZXJ2ZXIgSVAuIENoZWNrIGludGVybmV0LiI7IGV4aXQgMTsgfQoKZWNobyAiPT0gNS81IGNvbmZpZyArIHN0YXJ0ID09Igpta2RpciAtcCAvdXNyL2xvY2FsL2V0Yy94cmF5CmNhdCA+IC91c3IvbG9jYWwvZXRjL3hyYXkvY29uZmlnLmpzb24gPDxFT0YKewogICJsb2ciOiB7ICJsb2dsZXZlbCI6ICJ3YXJuaW5nIiB9LAogICJpbmJvdW5kcyI6IFsKICAgIHsKICAgICAgInBvcnQiOiA0NDMsCiAgICAgICJwcm90b2NvbCI6ICJ2bGVzcyIsCiAgICAgICJzZXR0aW5ncyI6IHsKICAgICAgICAiY2xpZW50cyI6IFsgeyAiaWQiOiAiJFVVSUQiLCAiZmxvdyI6ICJ4dGxzLXJwcngtdmlzaW9uIiB9IF0sCiAgICAgICAgImRlY3J5cHRpb24iOiAibm9uZSIKICAgICAgfSwKICAgICAgInN0cmVhbVNldHRpbmdzIjogewogICAgICAgICJuZXR3b3JrIjogInRjcCIsCiAgICAgICAgInNlY3VyaXR5IjogInJlYWxpdHkiLAogICAgICAgICJyZWFsaXR5U2V0dGluZ3MiOiB7CiAgICAgICAgICAic2hvdyI6IGZhbHNlLAogICAgICAgICAgImRlc3QiOiAid3d3Lm1pY3Jvc29mdC5jb206NDQzIiwKICAgICAgICAgICJ4dmVyIjogMCwKICAgICAgICAgICJzZXJ2ZXJOYW1lcyI6IFsgInd3dy5taWNyb3NvZnQuY29tIiBdLAogICAgICAgICAgInByaXZhdGVLZXkiOiAiJFBSSVYiLAogICAgICAgICAgInNob3J0SWRzIjogWyAiJFNJRCIgXQogICAgICAgIH0KICAgICAgfQogICAgfQogIF0sCiAgIm91dGJvdW5kcyI6IFsgeyAicHJvdG9jb2wiOiAiZnJlZWRvbSIgfSBdCn0KRU9GCgplY2hvICIkUFVCIiA+IC9yb290L3ZsZXNzLXB1YmtleS50eHQKZWNobyAiJFNJRCIgPiAvcm9vdC92bGVzcy1zaG9ydGlkLnR4dApjaG1vZCA2MDAgL3Jvb3Qvdmxlc3MtcHVia2V5LnR4dCAvcm9vdC92bGVzcy1zaG9ydGlkLnR4dAoKc3lzdGVtY3RsIGVuYWJsZSB4cmF5ID4gL2Rldi9udWxsIDI+JjEKc3lzdGVtY3RsIHJlc3RhcnQgeHJheQpzbGVlcCAyCnN5c3RlbWN0bCBpcy1hY3RpdmUgLS1xdWlldCB4cmF5IFwKICAmJiBlY2hvICJPSzogeHJheSBpcyBydW5uaW5nIiBcCiAgfHwgeyBlY2hvICJGQUlMRUQ6IHhyYXkgZGlkIG5vdCBzdGFydCI7IGpvdXJuYWxjdGwgLXUgeHJheSAtLW5vLXBhZ2VyIC1uIDIwOyBleGl0IDE7IH0KCmVjaG8gIiIKZWNobyAiPT09PT09PT09PT09PT09PT09PT0gWU9VUiBWTEVTUyBMSU5LID09PT09PT09PT09PT09PT09PT09IgplY2hvICJ2bGVzczovLyR7VVVJRH1AJHtJUH06NDQzP2VuY3J5cHRpb249bm9uZSZmbG93PXh0bHMtcnByeC12aXNpb24mc2VjdXJpdHk9cmVhbGl0eSZzbmk9d3d3Lm1pY3Jvc29mdC5jb20mZnA9Y2hyb21lJnBiaz0ke1BVQn0mc2lkPSR7U0lEfSNHT0xERU5TS1ktVlBTIgplY2hvICI9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0iCmVjaG8gIkNvcHkgdGhlIGxpbmsgYWJvdmUgLT4gR09MREVOU0tZIC0+IEltcG9ydCAtPiBMSU5LIC0+IHBhc3RlLiIKZWNobyAiQWRkIG1vcmUgdXNlcnMgbGF0ZXIgd2l0aDogIGJhc2ggYWRkLXZsZXNzLXVzZXIuc2ggPG5hbWU+Igo=
+#!/bin/bash
+# ============================================================
+# GOLDENSKY VPS one-shot setup
+# Installs Xray + configures VLESS + REALITY on port 443.
+# - Ubuntu 22.04 (or 20.04/24.04), run as root
+# - No domain name needed (REALITY camouflages as microsoft.com)
+# Usage:  bash setup-vps.sh
+# ============================================================
+set -e
+
+if [ "$(id -u)" != "0" ]; then
+  echo "Run as root:  sudo bash setup-vps.sh"
+  exit 1
+fi
+
+echo "== 1/5 packages =="
+apt-get update -qq
+apt-get install -y -qq curl openssl > /dev/null
+
+echo "== 2/5 install Xray =="
+bash <(curl -L --max-time 120 https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
+
+echo "== 3/5 firewall =="
+ufw allow 443/tcp > /dev/null 2>&1 || true
+# NOTE: also open TCP 443 in your provider's firewall/security-group panel.
+
+echo "== 4/5 keys =="
+UUID=$(xray uuid)
+KEYS=$(xray x25519)
+PRIV=$(echo "$KEYS" | grep "Private key" | awk '{print $3}')
+PUB=$(echo "$KEYS" | grep "Public key" | awk '{print $3}')
+SID=$(openssl rand -hex 8)
+IP=$(curl -s --max-time 10 https://api.ipify.org)
+[ -z "$IP" ] && { echo "Could not detect server IP. Check internet."; exit 1; }
+
+echo "== 5/5 config + start =="
+mkdir -p /usr/local/etc/xray
+cat > /usr/local/etc/xray/config.json <<EOF
+{
+  "log": { "loglevel": "warning" },
+  "inbounds": [
+    {
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [ { "id": "$UUID", "flow": "xtls-rprx-vision" } ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.microsoft.com:443",
+          "xver": 0,
+          "serverNames": [ "www.microsoft.com" ],
+          "privateKey": "$PRIV",
+          "shortIds": [ "$SID" ]
+        }
+      }
+    }
+  ],
+  "outbounds": [ { "protocol": "freedom" } ]
+}
+EOF
+
+echo "$PUB" > /root/vless-pubkey.txt
+echo "$SID" > /root/vless-shortid.txt
+chmod 600 /root/vless-pubkey.txt /root/vless-shortid.txt
+
+systemctl enable xray > /dev/null 2>&1
+systemctl restart xray
+sleep 2
+systemctl is-active --quiet xray \
+  && echo "OK: xray is running" \
+  || { echo "FAILED: xray did not start"; journalctl -u xray --no-pager -n 20; exit 1; }
+
+echo ""
+echo "==================== YOUR VLESS LINK ===================="
+echo "vless://${UUID}@${IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUB}&sid=${SID}#GOLDENSKY-VPS"
+echo "========================================================="
+echo "Copy the link above -> GOLDENSKY -> Import -> LINK -> paste."
+echo "Add more users later with:  bash add-vless-user.sh <name>"
