@@ -2,7 +2,9 @@
 # ============================================================
 # GOLDENSKY SSH-WS setup — SSH over WebSocket payload on port 80.
 # Fresh one-shot. Run as root on Ubuntu 22.04.
-# Usage:  sudo bash setup-ssh-ws.sh
+# Usage:  sudo bash setup-ssh-ws.sh [username] [password]
+# Example: sudo bash setup-ssh-ws.sh goldenskyvpn goldenskyvpn
+# Default: goldenskyvpn / goldenskyvpn
 #
 # What it does:
 #   1. Installs OpenSSH server (port 22)
@@ -29,8 +31,8 @@ fi
 
 WS_PORT=80
 SSH_PORT=22
-SSH_USER="boosstvpn"
-SSH_PASS="boosstvpn"
+SSH_USER="${1:-goldenskyvpn}"
+SSH_PASS="${2:-goldenskyvpn}"
 
 echo "== packages =="
 apt-get update -qq
