@@ -88,7 +88,14 @@ systemctl is-active --quiet xray \
 
 echo ""
 echo "==================== YOUR VLESS LINK ===================="
-echo "vless://${UUID}@${IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUB}&sid=${SID}#GOLDENSKY-VPS"
+LINK="vless://${UUID}@${IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUB}&sid=${SID}#GOLDENSKY-VPS"
+echo "$LINK"
 echo "========================================================="
+# Save exact bytes to a file too (terminal wrapping can corrupt
+# a manual copy — import this file via GOLDENSKY -> Import -> FILE).
+for d in /home/ubuntu /root; do
+  if [ -d "$d" ]; then echo "$LINK" > "$d/my-vpn.txt"; chmod 644 "$d/my-vpn.txt"; fi
+done
+echo "Link also saved to my-vpn.txt (exact, copy-safe)."
 echo "Copy the link above -> GOLDENSKY -> Import -> LINK -> paste."
 echo "Add more users later with:  bash add-vless-user.sh <name>"
