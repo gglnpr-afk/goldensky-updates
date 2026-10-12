@@ -101,8 +101,16 @@ def handle(client):
                 client.close()
                 return
         client.settimeout(None)
+        # Split headers from any pipelined bytes (JSch sends its version
+        # string immediately; it may arrive in the same TCP segment).
+        # Leftover bytes are the start of the SSH handshake — forward them,
+        # do NOT discard, or the handshake desynchronizes.
+        idx = data.find(b"\r\n\r\n") + 4
+        leftover = data[idx:]
         # No 101 reply — go straight to SSH so JSch sees the banner first.
         ssh = socket.create_connection((SSH_HOST, SSH_PORT), timeout=10)
+        if leftover:
+            ssh.sendall(leftover)
         t1 = threading.Thread(target=pipe, args=(client, ssh), daemon=True)
         t2 = threading.Thread(target=pipe, args=(ssh, client), daemon=True)
         t1.start(); t2.start()
