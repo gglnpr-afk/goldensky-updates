@@ -57,6 +57,11 @@ else
   echo "WARN: PasswordAuthentication may still be off — check sshd_config.d/"
 fi
 systemctl enable ssh > /dev/null 2>&1 || true
+# Kill any stale sshd listeners holding port 22 with old config
+# (e.g. a Sep30 process that ignores restarts), then restart fresh.
+systemctl disable --now ssh.socket > /dev/null 2>&1 || true
+pkill -f "^sshd: /usr/sbin/sshd -D.*\[listener\]" 2>/dev/null || true
+sleep 1
 systemctl restart ssh
 
 echo "== user =="
