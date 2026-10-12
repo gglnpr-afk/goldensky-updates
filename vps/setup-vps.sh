@@ -25,12 +25,23 @@ ufw allow 443/tcp > /dev/null 2>&1 || true
 # NOTE: also open TCP 443 in your provider's firewall/security-group panel.
 
 echo "== 4/5 keys =="
-UUID=$(xray uuid)
-KEYS=$(xray x25519)
-PRIV=$(echo "$KEYS" | grep "Private key" | awk '{print $3}')
-PUB=$(echo "$KEYS" | grep "Public key" | awk '{print $3}')
+XRAY=/usr/local/bin/xray
+[ -x "$XRAY" ] || XRAY=xray
+UUID=$($XRAY uuid 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+# xray x25519 output (Sept 2025 and later):
+#   PrivateKey: xxx
+#   Password (PublicKey): yyy   <- this value IS the client's pbk
+#   Hash32: zzz
+# older xray used "Private key:" / "Public key:" (kept as fallback)
+XOUT=$($XRAY x25519 2>/dev/null)
+PRIV=$(echo "$XOUT" | awk '/^PrivateKey:/{print $2}')
+PUB=$(echo "$XOUT" | awk '/^Password/{print $3}')
+[ -z "$PRIV" ] && PRIV=$(echo "$XOUT" | awk '/^Private key:/{print $3}')
+[ -z "$PUB" ] && PUB=$(echo "$XOUT" | awk '/^Public key:/{print $3}')
 SID=$(openssl rand -hex 8)
 IP=$(curl -s --max-time 10 https://api.ipify.org)
+[ -z "$UUID" ] && { echo "ERROR: UUID generation failed."; exit 1; }
+[ -z "$PRIV" ] || [ -z "$PUB" ] && { echo "ERROR: could not read keys from xray x25519. Output was:"; echo "$XOUT"; exit 1; }
 [ -z "$IP" ] && { echo "Could not detect server IP. Check internet."; exit 1; }
 
 echo "== 5/5 config + start =="
