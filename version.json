@@ -1,6 +1,6 @@
 {
-  "version_code": 415,
-  "version_name": "1.0.0",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.0/goldensky.9.apk",
-  "notes": "V1.0.0: free servers (SS + VMess) baked in with encrypted links, domain musiczone.mobi, offline license, self-updater."
+  "version_code": 416,
+  "version_name": "1.0.1",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.1/goldensky.10.apk",
+  "notes": "V1.0.1: 4 baked-in free servers (SS + VMess x2 servers), encrypted links, domains, offline license, self-updater."
 }
