@@ -1,6 +1,6 @@
 {
-  "version_code": 421,
-  "version_name": "1.0.4",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.4/goldensky.4.apk",
-  "notes": "V1.0.4: SG server တွေ ဖြုတ်လိုက်ပြီ — JP (GOLDENSKY-JP, JP-VMESS) + ATOM 500MB ပဲ ကျန်တယ်။ app ဖွင့်တာနဲ့ SG တွေ အလိုလို ပျောက်သွားမယ်။"
+  "version_code": 422,
+  "version_name": "1.0.5",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.5/goldensky.5.apk",
+  "notes": "V1.0.5: GOLDENSKY-SG + GOLDENSKY-SG-VMESS ပြန်ပါလာပြီ — key အသေနဲ့ App ထဲထည့်ထားပြီးသား။ Update တင်လိုက်တာနဲ့ SG နှစ်ခု အလိုအလျောက် ပေါ်လာမယ်။"
 }
