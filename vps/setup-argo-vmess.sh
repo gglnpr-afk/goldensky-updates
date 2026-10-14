@@ -125,10 +125,13 @@ if ! cloudflared tunnel list 2>/dev/null | grep -q "$TUNNEL"; then
 else
   echo "Tunnel '$TUNNEL' already exists — keeping it."
 fi
+# cloudflared names the credentials file by TUNNEL ID, not by name.
+TUNNEL_ID=$(cloudflared tunnel list 2>/dev/null | awk -v n="$TUNNEL" '$2==n {print $1; exit}')
+[ -z "$TUNNEL_ID" ] && { echo "ERROR: could not find tunnel ID for $TUNNEL"; exit 1; }
 mkdir -p "$HOME/.cloudflared"
 cat > "$HOME/.cloudflared/config.yml" <<EOF
 tunnel: $TUNNEL
-credentials-file: $HOME/.cloudflared/${TUNNEL}.json
+credentials-file: $HOME/.cloudflared/${TUNNEL_ID}.json
 ingress:
   - hostname: $FULL_DOMAIN
     service: http://localhost:$WS_PORT
