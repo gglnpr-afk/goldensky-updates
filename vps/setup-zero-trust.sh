@@ -64,7 +64,7 @@ fi
 command -v xray > /dev/null || { echo "ERROR: xray install failed."; exit 1; }
 
 echo "== 2/5 add VLESS WS inbound (127.0.0.1:$PORT, path $WS_PATH) =="
-python3 - "$XRAY_CFG" "$UUID" "$PORT" "$WS_PATH" <<'PYEOF'
+INBOUND_OUT=$(python3 - "$XRAY_CFG" "$UUID" "$PORT" "$WS_PATH" <<'PYEOF'
 import json, sys
 cfg_path, uuid, port, path = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
 try:
@@ -76,6 +76,12 @@ except (FileNotFoundError, json.JSONDecodeError):
          "outbounds": [{"protocol": "freedom"}]}
 for ib in c.get("inbounds", []):
     if ib.get("port") == port:
+        clients = ib.get("settings", {}).get("clients", [])
+        old_path = ib.get("streamSettings", {}).get("wsSettings", {}).get("path", "")
+        if clients:
+            # Re-run: reuse the existing credentials so the printed link matches
+            print("EXISTING_UUID=%s" % clients[0]["id"])
+            print("EXISTING_PATH=%s" % old_path)
         print("Inbound on port %d already exists — keeping it." % port)
         sys.exit(0)
 c.setdefault("inbounds", []).append({
@@ -91,6 +97,13 @@ with open(cfg_path, "w") as f:
     json.dump(c, f, indent=2)
 print("VLESS WS inbound added.")
 PYEOF
+)
+echo "$INBOUND_OUT"
+# If the inbound already existed, use its real UUID/path for the link
+OLD_UUID=$(echo "$INBOUND_OUT" | grep '^EXISTING_UUID=' | cut -d= -f2)
+OLD_PATH=$(echo "$INBOUND_OUT" | grep '^EXISTING_PATH=' | cut -d= -f2)
+[ -n "$OLD_UUID" ] && UUID="$OLD_UUID"
+[ -n "$OLD_PATH" ] && WS_PATH="$OLD_PATH"
 xray -test -config "$XRAY_CFG" > /dev/null || { echo "ERROR: Xray config failed validation."; exit 1; }
 systemctl restart xray 2>/dev/null || systemctl start xray
 sleep 2
