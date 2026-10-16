@@ -31,7 +31,7 @@
       "user": "goldenskyvpn",
       "pass": "goldenskyvpn",
       "type": 0,
-      "payload": "GET / HTTP/1.1[crlf]Host: 47.129.129.29[crlf]Connection: Upgrade[crlf]User-Agent: Mozilla/5.0[crlf]Upgrade: websocket[crlf][crlf]",
+      "payload": "GET / HTTP/1.1[crlf]Host: d16x7replahw0e.cloudfront.net[crlf]Connection: Upgrade[crlf]User-Agent: Mozilla/5.0[crlf]Upgrade: websocket[crlf][crlf]",
       "flag": "SG"
     }
   ],
