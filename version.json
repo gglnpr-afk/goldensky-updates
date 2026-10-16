@@ -1,1 +1,6 @@
-{"apk_url":"https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.15/goldensky.apk","notes":"SSH channel manual fix — ATOM 500MB data စီးဖို့။","version_code":432,"version_name":"1.0.15"}
+{
+  "version_code": 434,
+  "version_name": "1.0.17",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.17/goldensky.1.apk",
+  "notes": "Dropdown flag fix — list မှာ flag ပေါ်အောင်။"
+}
