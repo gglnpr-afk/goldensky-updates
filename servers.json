@@ -24,5 +24,7 @@
     }
   ],
   "ssh": [],
-  "removed": []
+  "removed": [
+    "ATOM 500MB"
+  ]
 }
