@@ -35,5 +35,7 @@
       "flag": "SG"
     }
   ],
-  "removed": []
+  "removed": [
+    "ATOM 500MB"
+  ]
 }
