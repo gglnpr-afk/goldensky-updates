@@ -23,8 +23,17 @@
       "flag": "SG"
     }
   ],
-  "ssh": [],
-  "removed": [
-    "ATOM 500MB"
-  ]
+  "ssh": [
+    {
+      "name": "ATOM 500MB",
+      "host": "47.129.129.29",
+      "port": 80,
+      "user": "goldenskyvpn",
+      "pass": "goldenskyvpn",
+      "type": 0,
+      "payload": "GET / HTTP/1.1[crlf]Host: 47.129.129.29[crlf]Connection: Upgrade[crlf]User-Agent: Mozilla/5.0[crlf]Upgrade: websocket[crlf][crlf]",
+      "flag": "SG"
+    }
+  ],
+  "removed": []
 }
