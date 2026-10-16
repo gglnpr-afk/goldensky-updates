@@ -1,6 +1,1 @@
-{
-  "version_code": 423,
-  "version_name": "1.0.6",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.6/goldensky.9.apk",
-  "notes": "V1.0.6: ATOM 500MB SSH compression fix — ဆက်တိုက်ချိတ်ဆက်မှု ပိုတည်ငြိမ်တယ်၊ ပြန်ချိတ်တဲ့အခါ စောင့်ပြီးမှ ချိတ်မယ်။ GOLDENSKY-SG/SG-VMESS (donatekey.realty) key အသေပါပြီးသား။"
-}
+{"apk_url":"https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.7/goldensky.10.apk","notes":"Zero-Trust VLESS+WS အသေထည့်သွင်းပြီး (Cloudflare Tunnel, alpn=http/1.1 fix).","version_code":424,"version_name":"1.0.7"}
