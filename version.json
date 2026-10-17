@@ -1,6 +1,6 @@
 {
-  "version_code": 436,
-  "version_name": "1.0.19",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.19/goldensky.apk",
-  "notes": "Stability fix — ခဏျပဳတ္တာ ေပ်ာက္ေအာင္ (probe ၄ ခါမွ reconnect) + UDP relay leak fix။"
+  "version_code": 438,
+  "version_name": "1.0.21",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.21/goldensky.4.apk",
+  "notes": "Design အသစ် (Final Combo) + Add/Paste/QR ခလုတ်များ။"
 }
