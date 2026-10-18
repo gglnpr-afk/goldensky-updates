@@ -1,6 +1,6 @@
 {
-  "version_code": 438,
-  "version_name": "1.0.21",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.21/goldensky.4.apk",
-  "notes": "Design အသစ် (Final Combo) + Add/Paste/QR ခလုတ်များ။"
+  "version_code": 440,
+  "version_name": "1.0.23",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.23/goldensky.5.apk",
+  "notes": "ATOM voice call UDP fix (SocksRelay loopback)။"
 }
