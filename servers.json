@@ -40,12 +40,12 @@
    "flag": "SG"
   },
   {
-   "name": "GOLDENSKY-SG-SSL",
+   "name": "GOLDENSKY-SG-SSH",
    "host": "216.195.195.71",
-   "port": 443,
+   "port": 22,
    "user": "testuser",
    "pass": "vvip5",
-   "type": 1,
+   "type": 0,
    "flag": "SG"
   }
  ],
