@@ -47,16 +47,9 @@
    "pass": "vvip5",
    "type": 0,
    "flag": "SG"
-  },
-  {
-   "name": "GOLDENSKY-SG-SSL",
-   "host": "47.129.129.29",
-   "port": 443,
-   "user": "goldenskyvpn",
-   "pass": "goldenskyvpn",
-   "type": 1,
-   "flag": "SG"
   }
  ],
- "removed": []
+ "removed": [
+  "GOLDENSKY-SG-SSL"
+ ]
 }
