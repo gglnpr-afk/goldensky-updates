@@ -1,1 +1,53 @@
-PLACEHOLDER
+{
+ "v": 1,
+ "servers": [
+  {
+   "name": "GOLDENSKY-JP",
+   "link": "ss://YWVzLTEyOC1nY206NTc1M2ZhMmRkZmY5NDUxNmJiNjVlODBj@busterzone.mobi:8388#GOLDENSKY-SS2"
+  },
+  {
+   "name": "GOLDENSKY-JP-VMESS",
+   "link": "vmess://eyJ2IjoiMiIsInBzIjoiR09MREVOU0tZLUZSRUUyIiwiYWRkIjoiYnVzdGVyem9uZS5tb2JpIiwicG9ydCI6IjgwODAiLCJpZCI6IjJmZjExMDZhLTMxNGYtNDlmYS1hNjc1LWNlMTZhZmY5ZjgzMSIsImFpZCI6IjAiLCJuZXQiOiJ0Y3AiLCJ0eXBlIjoibm9uZSIsImhvc3QiOiIiLCJwYXRoIjoiIiwidGxzIjoiIn0="
+  },
+  {
+   "name": "GOLDENSKY-SG",
+   "link": "ss://YWVzLTEyOC1nY206YzkyMDY0ZGNmYWIyNDhmNWIxY2JlZmQx@donatekey.realty:8388#GOLDENSKY-SG"
+  },
+  {
+   "name": "GOLDENSKY-SG-VMESS",
+   "link": "vmess://eyJ2IjoiMiIsInBzIjoiR09MREVOU0tZLVNHLVZNRVNTIiwiYWRkIjoiZG9uYXRla2V5LnJlYWx0eSIsInBvcnQiOiI4MDgwIiwiaWQiOiJiYmZmOGY1MC1iZjkzLTRkYjEtYWQ0ZS04MzkyZDc5NzlkMjciLCJhaWQiOiIwIiwibmV0IjoidGNwIiwidHlwZSI6Im5vbmUiLCJob3N0IjoiIiwicGF0aCI6IiIsInRscyI6IiJ9"
+  },
+  {
+   "name": "Zero-Trust",
+   "link": "vless://42ccb79a-a7c0-4d14-9c0a-5a1d1e68dc57@blog.chithinphyu.info:443?encryption=none&security=tls&sni=blog.chithinphyu.info&fp=chrome&alpn=http%2F1.1&type=ws&host=blog.chithinphyu.info&path=%2Fblog#Zero-Trust",
+   "flag": "SG"
+  },
+  {
+   "name": "💥Premium By SisNaing💥",
+   "link": "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTozZ0F3R3l1b0ZXSG5QVEdZZFNrcGRaUmIvM3lOLzJoSW1hRHRuZlJFTVhvPQ@84.247.159.191:42411?type=tcp#%F0%9F%92%A5Premium%20By%20SisNaing%F0%9F%92%A5-%F0%9F%87%AF%F0%9F%87%B5%F0%9F%87%AF%F0%9F%87%B5",
+   "flag": "JP"
+  }
+ ],
+ "ssh": [
+  {
+   "name": "ATOM 500MB",
+   "host": "47.129.129.29",
+   "port": 80,
+   "user": "goldenskyvpn",
+   "pass": "goldenskyvpn",
+   "type": 0,
+   "payload": "GET / HTTP/1.1[crlf]Host: d16x7replahw0e.cloudfront.net[crlf]Connection: Upgrade[crlf]User-Agent: Mozilla/5.0[crlf]Upgrade: websocket[crlf][crlf]",
+   "flag": "SG"
+  },
+  {
+   "name": "GOLDENSKY-SG-SSL",
+   "host": "216.195.195.71",
+   "port": 443,
+   "user": "testuser",
+   "pass": "vvip5",
+   "type": 1,
+   "flag": "SG"
+  }
+ ],
+ "removed": []
+}
