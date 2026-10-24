@@ -1,6 +1,6 @@
 {
-  "version_code": 445,
-  "version_name": "1.0.28",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.28/goldensky.3.apk",
-  "notes": "ATOM မှာ voice call အတွင်း UDP ပြတ်တဲ့ ပြဿနာ ပြင်ထားတယ် — relay link ပြတ်သွားရင် အလိုအလျောက် ပြန်ချိတ်ပေးတယ်။"
+  "version_code": 446,
+  "version_name": "1.0.29",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.29/goldensky.4.apk",
+  "notes": "Server list update ပိုမြန်အောင် လုပ်ထားတယ် — app ဖွင့်တိုင်း၊ connect မလုပ်ခင် အလိုအလျောက် စစ်ပေးတယ် (Refresh နှိပ်စရာ မလိုတော့ဘူး)။"
 }
