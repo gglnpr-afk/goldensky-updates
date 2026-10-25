@@ -39,10 +39,10 @@ After=network.target
 [Service]
 Environment=MP_MAX_MESSAGES=0
 Environment=MP_DATABASE=/var/lib/mailpit/mailpit.db
-Environment=MP_SMTP=0.0.0.0:25
-Environment=MP_LISTEN=127.0.0.1:8025
+Environment=MP_SMTP_BIND_ADDR=0.0.0.0:25
+Environment=MP_UI_BIND_ADDR=127.0.0.1:8025
 Environment=MP_MAX_MESSAGE_SIZE=25
-ExecStart=/usr/local/bin/mailpit
+ExecStart=/usr/local/bin/mailpit --smtp 0.0.0.0:25 --listen 127.0.0.1:8025 --database /var/lib/mailpit/mailpit.db --max 0 --max-message-size 25
 Restart=always
 User=root
 [Install]
