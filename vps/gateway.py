@@ -78,7 +78,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             c = db(); n = c.execute("SELECT COUNT(*) FROM addresses").fetchone()[0]; c.close()
-            return self.sendj(200, {"ok": True, "domains": DOMAINS, "addresses": n})
+            return self.sendj(200, {"ok": True, "v": 2, "domains": DOMAINS, "addresses": n})
         addr = self.auth()
         if not addr: return self.sendj(401, {"error": "bad token"})
         if self.path.startswith("/messages/"):
@@ -100,8 +100,20 @@ class H(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path != "/address": return self.sendj(404, {"error": "not found"})
-        dom = str(self.bodyj().get("domain", "")).lower().strip()
+        body = self.bodyj()
+        dom = str(body.get("domain", "")).lower().strip()
         if dom not in DOMAINS: return self.sendj(400, {"error": "domain not served here", "domains": DOMAINS})
+        name = str(body.get("name", "")).lower().strip()
+        if name:
+            # custom username (v2): 2-64 chars, alnum segments split by single . _ -
+            if not (2 <= len(name) <= 64) or not re.fullmatch(r"[a-z0-9]+([._-][a-z0-9]+)*", name):
+                return self.sendj(400, {"error": "bad name"})
+            address = f"{name}@{dom}"; tok = secrets.token_urlsafe(24)
+            try:
+                c = db(); c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit(); c.close()
+                return self.sendj(200, {"address": address, "token": tok, "domain": dom})
+            except sqlite3.IntegrityError:
+                return self.sendj(409, {"error": "taken"})
         alpha = string.ascii_lowercase + string.digits
         for _ in range(20):
             local = "gs" + "".join(secrets.choice(alpha) for _ in range(9))
