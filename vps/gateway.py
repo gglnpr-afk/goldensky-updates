@@ -11,9 +11,11 @@ Config via env:
   GS_PORT      listen port on 127.0.0.1 (default 8090)
   MAILPIT_API  default http://127.0.0.1:8025
 """
-import hashlib, json, os, re, secrets, sqlite3, string, time
+import hashlib, json, os, re, secrets, sqlite3, string, threading, time
 import urllib.request, urllib.parse, urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+DB_LOCK = threading.Lock()  # serialize writes: sqlite + threads can hit "database is locked" (seen in local v2 test)
 
 DOMAINS = [d.strip().lower() for d in os.environ.get("GS_DOMAINS", "").split(",") if d.strip()]
 DB_PATH = os.environ.get("GS_DB", "/var/lib/gsmail/gateway.db")
@@ -22,7 +24,9 @@ MAILPIT = os.environ.get("MAILPIT_API", "http://127.0.0.1:8025").rstrip("/")
 
 def db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    c = sqlite3.connect(DB_PATH)
+    c = sqlite3.connect(DB_PATH, timeout=15)
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("PRAGMA busy_timeout=10000")
     c.execute("CREATE TABLE IF NOT EXISTS addresses(address TEXT PRIMARY KEY, token_hash TEXT, created_at INTEGER)")
     return c
 
@@ -109,19 +113,26 @@ class H(BaseHTTPRequestHandler):
             if not (2 <= len(name) <= 64) or not re.fullmatch(r"[a-z0-9]+([._-][a-z0-9]+)*", name):
                 return self.sendj(400, {"error": "bad name"})
             address = f"{name}@{dom}"; tok = secrets.token_urlsafe(24)
+            c = db()
             try:
-                c = db(); c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit(); c.close()
+                with DB_LOCK:
+                    c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
                 return self.sendj(200, {"address": address, "token": tok, "domain": dom})
             except sqlite3.IntegrityError:
                 return self.sendj(409, {"error": "taken"})
+            finally:
+                c.close()
         alpha = string.ascii_lowercase + string.digits
         for _ in range(20):
             local = "gs" + "".join(secrets.choice(alpha) for _ in range(9))
             address = f"{local}@{dom}"; tok = secrets.token_urlsafe(24)
+            c = db()
             try:
-                c = db(); c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit(); c.close()
+                with DB_LOCK:
+                    c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
                 return self.sendj(200, {"address": address, "token": tok, "domain": dom})
             except sqlite3.IntegrityError: continue
+            finally: c.close()
         return self.sendj(500, {"error": "try again"})
 
     def do_DELETE(self):
@@ -143,7 +154,11 @@ class H(BaseHTTPRequestHandler):
                 ids = [m.get("ID") for m in r.get("messages", [])]
                 if ids: mailpit("/api/v1/messages", method="DELETE", body={"ids": ids})
             except Exception: pass
-            c = db(); c.execute("DELETE FROM addresses WHERE address=?", (addr,)); c.commit(); c.close()
+            c = db()
+            try:
+                with DB_LOCK:
+                    c.execute("DELETE FROM addresses WHERE address=?", (addr,)); c.commit()
+            finally: c.close()
             return self.sendj(200, {"ok": True})
         return self.sendj(404, {"error": "not found"})
 
