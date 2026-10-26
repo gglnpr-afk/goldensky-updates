@@ -1,6 +1,6 @@
 {
-  "version_code": 446,
-  "version_name": "1.0.29",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.29/goldensky.4.apk",
-  "notes": "Server list update ပိုမြန်အောင် လုပ်ထားတယ် — app ဖွင့်တိုင်း၊ connect မလုပ်ခင် အလိုအလျောက် စစ်ပေးတယ် (Refresh နှိပ်စရာ မလိုတော့ဘူး)။"
+  "version_code": 447,
+  "version_name": "1.0.30",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.30/goldensky.5.1.apk",
+  "notes": "XHTTP နည်းပညာ အသစ်ထည့်သွင်းထားပါတယ် — server အသစ် GOLDENSKY-SG2-XHTTP ကို ပိုမြန်၊ ပိုတည်ငြိမ်စွာ ချိတ်ဆက်နိုင်ပါပြီ။ Server စာရင်း အလိုအလျောက် နောက်ဆုံးအခြေအနေ အမြဲရရှိပါမယ်။"
 }
