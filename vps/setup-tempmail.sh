@@ -3,13 +3,16 @@
 # Usage on the VPS (via Termius):
 #   Tokyo (52.194.182.108):       sudo bash setup-tempmail.sh busterzone.mobi
 #   Singapore (47.129.129.29):    sudo bash setup-tempmail.sh donatekey.realty
+#   Multi-domain (one VPS, several mail domains; API host uses the FIRST domain):
+#                                 sudo bash setup-tempmail.sh luciferdead.com luciferdead.com,secondfamilys.com
 # Installs: Mailpit (SMTP catch-all :25, persistent DB, UNLIMITED retention)
 #         + gsmail gateway (token-per-address API, 127.0.0.1:8090)
 #         + Caddy (HTTPS at https://mailapi.<domain>)
 # Safe to re-run: it reinstalls/updates its own pieces only.
 set -e
 DOMAIN="${1:-}"
-if [ -z "$DOMAIN" ]; then echo "Usage: sudo bash setup-tempmail.sh <domain>"; exit 1; fi
+DOMAINS="${2:-$DOMAIN}"
+if [ -z "$DOMAIN" ]; then echo "Usage: sudo bash setup-tempmail.sh <primary-domain> [all-domains-comma-separated]"; exit 1; fi
 if [ "$(id -u)" != "0" ]; then echo "Run with sudo"; exit 1; fi
 API_HOST="mailapi.$DOMAIN"
 echo "== GOLDENSKY Temp Mail setup for $DOMAIN (API: https://$API_HOST) =="
@@ -64,7 +67,7 @@ Description=GOLDENSKY Temp Mail gateway API
 After=network.target mailpit.service
 Requires=mailpit.service
 [Service]
-Environment=GS_DOMAINS=$DOMAIN
+Environment=GS_DOMAINS=$DOMAINS
 Environment=GS_DB=/var/lib/gsmail/gateway.db
 Environment=GS_PORT=8090
 ExecStart=/usr/bin/python3 /opt/gsmail/gateway.py
@@ -108,12 +111,14 @@ systemctl --no-pager -n0 status mailpit gsmail caddy 2>/dev/null | grep -E "●|
 echo
 curl -fsS http://127.0.0.1:8090/health && echo
 echo
-echo "DONE for $DOMAIN"
+echo "DONE for $DOMAINS"
 echo "Next steps:"
 echo " 1) Lightsail panel -> this instance -> Networking: open TCP 25, 80, 443"
-echo " 2) Cloudflare DNS (DNS only / grey cloud):"
+echo " 2) Cloudflare DNS for $DOMAIN (DNS only / grey cloud):"
 echo "      A   mail     -> this VPS public IP"
 echo "      MX  @        -> mail.$DOMAIN   (priority 10)"
 echo "      A   mailapi  -> this VPS public IP"
+echo " 2b) For EACH extra domain in '$DOMAINS' (Cloudflare DNS, grey cloud):"
+echo "      MX  @        -> mail.$DOMAIN   (priority 10)   [mail lands on this same VPS]"
 echo " 3) Test: open https://$API_HOST/health in a browser (should show ok:true)"
 echo "Retention: UNLIMITED (no auto-delete). Existing VPN services untouched."
