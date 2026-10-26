@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "1.12",
-  "url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/tempmail-v1.12/GOLDENSKY-TempMail.apk",
-  "notes": "Auto Update ပါလာပါပြီ — နောက်ပိုင်း version အသစ်တွေကို app ထဲကပဲ update လုပ်နိုင်ပါပြီ။ Recovery code က ဂဏန်း ၈ လုံး ဖြစ်သွားပါပြီ။"
+  "versionCode": 14,
+  "versionName": "1.13",
+  "url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/tempmail-v1.13/GOLDENSKY-TempMail.2.apk",
+  "notes": "Domain အသစ် ၂ ခု ထပ်ထည့်ထားပါတယ် — luciferdead.com နဲ့ secondfamilys.com (ကိုယ်ပိုင် server, unlimited, recovery code သုံးလို့ရ)။"
 }
