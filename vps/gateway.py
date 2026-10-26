@@ -37,10 +37,11 @@ def db():
 
 def h(tok): return hashlib.sha256(tok.encode()).hexdigest()
 
-CODE_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # unambiguous: no 0/O/1/I
 def new_code():
-    raw = "".join(secrets.choice(CODE_ALPHA) for _ in range(16))
-    return "-".join(raw[i:i + 4] for i in range(0, 16, 4))
+    # 8 digits only — easy to read, dictate and type by hand on a phone.
+    # Brute force is bounded by the /recover lockout (8 wrong tries = 1h lock).
+    raw = "".join(secrets.choice("0123456789") for _ in range(8))
+    return raw[:4] + "-" + raw[4:]
 def norm_code(s): return re.sub(r"[^A-Za-z0-9]", "", str(s)).upper()
 
 OTP_RE = re.compile(r"(?<!\d)(\d{4,8})(?!\d)")
@@ -93,7 +94,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             c = db(); n = c.execute("SELECT COUNT(*) FROM addresses").fetchone()[0]; c.close()
-            return self.sendj(200, {"ok": True, "v": 3, "domains": DOMAINS, "addresses": n})
+            return self.sendj(200, {"ok": True, "v": 4, "domains": DOMAINS, "addresses": n})
         addr = self.auth()
         if not addr: return self.sendj(401, {"error": "bad token"})
         if self.path.startswith("/messages/"):
