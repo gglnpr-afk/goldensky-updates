@@ -109,7 +109,11 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now mailpit gsmail caddy
+systemctl enable mailpit gsmail caddy
+# NOTE: "enable --now" does NOT restart an already-running service, so a
+# re-run with new domains would silently keep the OLD config live.
+# Explicit restart makes re-runs actually apply (fresh installs: starts them).
+systemctl restart mailpit gsmail caddy
 sleep 2
 echo
 echo "== Status =="
