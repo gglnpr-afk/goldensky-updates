@@ -5,6 +5,10 @@
 #   Singapore (47.129.129.29):    sudo bash setup-tempmail.sh donatekey.realty
 #   Multi-domain (one VPS, several mail domains; API host uses the FIRST domain):
 #                                 sudo bash setup-tempmail.sh luciferdead.com luciferdead.com,secondfamilys.com
+#   Migration (several API hosts on one VPS, 3rd arg = comma-separated API hosts):
+#                                 sudo bash setup-tempmail.sh luciferdead.com \
+#                                   luciferdead.com,secondfamilys.com,busterzone.mobi,donatekey.realty \
+#                                   mailapi.luciferdead.com,mailapi.busterzone.mobi,mailapi.donatekey.realty
 # Installs: Mailpit (SMTP catch-all :25, persistent DB, UNLIMITED retention)
 #         + gsmail gateway (token-per-address API, 127.0.0.1:8090)
 #         + Caddy (HTTPS at https://mailapi.<domain>)
@@ -12,10 +16,12 @@
 set -e
 DOMAIN="${1:-}"
 DOMAINS="${2:-$DOMAIN}"
-if [ -z "$DOMAIN" ]; then echo "Usage: sudo bash setup-tempmail.sh <primary-domain> [all-domains-comma-separated]"; exit 1; fi
+API_HOSTS="${3:-mailapi.$DOMAIN}"
+if [ -z "$DOMAIN" ]; then echo "Usage: sudo bash setup-tempmail.sh <primary-domain> [all-domains-csv] [api-hosts-csv]"; exit 1; fi
 if [ "$(id -u)" != "0" ]; then echo "Run with sudo"; exit 1; fi
-API_HOST="mailapi.$DOMAIN"
-echo "== GOLDENSKY Temp Mail setup for $DOMAIN (API: https://$API_HOST) =="
+API_HOST=$(echo "$API_HOSTS" | cut -d, -f1)
+CADDY_ADDRS=$(echo "$API_HOSTS" | sed 's/,/, /g')
+echo "== GOLDENSKY Temp Mail setup for $DOMAINS (API: $API_HOSTS) =="
 
 for p in 25 80 443; do
   if ss -tlnp 2>/dev/null | grep -q ":$p "; then echo "NOTE: port $p already in use — check before continuing"; fi
@@ -85,7 +91,7 @@ if ! command -v caddy >/dev/null 2>&1; then
 fi
 mkdir -p /etc/caddy
 cat > /etc/caddy/Caddyfile <<EOF
-$API_HOST {
+$CADDY_ADDRS {
     reverse_proxy 127.0.0.1:8090
 }
 EOF
