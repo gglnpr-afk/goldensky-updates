@@ -1,6 +1,6 @@
 #!/bin/bash
 # GOLDENSKY Temp Mail — update the gsmail gateway to the latest version
-# (v2: custom username support). Safe: only the gateway API restarts;
+# (v3: recovery codes). Safe: only the gateway API restarts;
 # Mailpit, stored mail, VPN services are untouched.
 set -e
 curl -fsSL "https://raw.githubusercontent.com/gglnpr-afk/goldensky-updates/main/vps/gateway.py" -o /opt/gsmail/gateway.py

@@ -28,9 +28,20 @@ def db():
     c.execute("PRAGMA journal_mode=WAL")
     c.execute("PRAGMA busy_timeout=10000")
     c.execute("CREATE TABLE IF NOT EXISTS addresses(address TEXT PRIMARY KEY, token_hash TEXT, created_at INTEGER)")
+    # v3 migration: recovery-code columns (added in place; existing rows keep working)
+    cols = [r[1] for r in c.execute("PRAGMA table_info(addresses)").fetchall()]
+    if "recovery_hash" not in cols: c.execute("ALTER TABLE addresses ADD COLUMN recovery_hash TEXT")
+    if "recovery_fails" not in cols: c.execute("ALTER TABLE addresses ADD COLUMN recovery_fails INTEGER DEFAULT 0")
+    if "recovery_lock" not in cols: c.execute("ALTER TABLE addresses ADD COLUMN recovery_lock INTEGER DEFAULT 0")
     return c
 
 def h(tok): return hashlib.sha256(tok.encode()).hexdigest()
+
+CODE_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # unambiguous: no 0/O/1/I
+def new_code():
+    raw = "".join(secrets.choice(CODE_ALPHA) for _ in range(16))
+    return "-".join(raw[i:i + 4] for i in range(0, 16, 4))
+def norm_code(s): return re.sub(r"[^A-Za-z0-9]", "", str(s)).upper()
 
 OTP_RE = re.compile(r"(?<!\d)(\d{4,8})(?!\d)")
 def find_otp(*texts):
@@ -82,7 +93,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             c = db(); n = c.execute("SELECT COUNT(*) FROM addresses").fetchone()[0]; c.close()
-            return self.sendj(200, {"ok": True, "v": 2, "domains": DOMAINS, "addresses": n})
+            return self.sendj(200, {"ok": True, "v": 3, "domains": DOMAINS, "addresses": n})
         addr = self.auth()
         if not addr: return self.sendj(401, {"error": "bad token"})
         if self.path.startswith("/messages/"):
@@ -102,7 +113,59 @@ class H(BaseHTTPRequestHandler):
                                      "messages": [msg_to_list(m) for m in r.get("messages", [])]})
         return self.sendj(404, {"error": "not found"})
 
+    def recovery_code(self):
+        # Authenticated (Bearer token): (re)generate this address's recovery code.
+        # The code is returned ONCE in this response; only its hash is stored.
+        # Regenerating replaces the old code (the old one stops working).
+        addr = self.auth()
+        if not addr: return self.sendj(401, {"error": "bad token"})
+        code = new_code()
+        c = db()
+        try:
+            with DB_LOCK:
+                c.execute("UPDATE addresses SET recovery_hash=?, recovery_fails=0, recovery_lock=0 WHERE address=?",
+                          (h(norm_code(code)), addr)); c.commit()
+        finally: c.close()
+        return self.sendj(200, {"address": addr, "code": code})
+
+    def recover(self):
+        # No auth: address + recovery code -> ROTATE the token and return the new one.
+        # The recovery code itself stays valid until the owner regenerates it.
+        # Brute-force guard: 8 wrong tries lock recovery for that address for 1 hour.
+        body = self.bodyj()
+        address = str(body.get("address", "")).lower().strip()
+        code = norm_code(body.get("code", ""))
+        c = db()
+        try:
+            row = c.execute("SELECT recovery_hash, recovery_fails, recovery_lock FROM addresses WHERE address=?",
+                            (address,)).fetchone()
+            now = int(time.time())
+            if not row or not row[0]:
+                return self.sendj(401, {"error": "bad address or code"})
+            rhash, fails, lock = row[0], row[1] or 0, row[2] or 0
+            if lock > now:
+                return self.sendj(429, {"error": "too many tries — try again in an hour"})
+            import hmac as _hmac
+            if not _hmac.compare_digest(h(code), rhash):
+                with DB_LOCK:
+                    if fails + 1 >= 8:
+                        c.execute("UPDATE addresses SET recovery_fails=0, recovery_lock=? WHERE address=?",
+                                  (now + 3600, address))
+                    else:
+                        c.execute("UPDATE addresses SET recovery_fails=? WHERE address=?", (fails + 1, address))
+                    c.commit()
+                return self.sendj(401, {"error": "bad address or code"})
+            tok = secrets.token_urlsafe(24)
+            with DB_LOCK:
+                c.execute("UPDATE addresses SET token_hash=?, recovery_fails=0, recovery_lock=0 WHERE address=?",
+                          (h(tok), address)); c.commit()
+            dom = address.split("@", 1)[1] if "@" in address else ""
+            return self.sendj(200, {"address": address, "token": tok, "domain": dom})
+        finally: c.close()
+
     def do_POST(self):
+        if self.path == "/address/recovery-code": return self.recovery_code()
+        if self.path == "/recover": return self.recover()
         if self.path != "/address": return self.sendj(404, {"error": "not found"})
         body = self.bodyj()
         dom = str(body.get("domain", "")).lower().strip()
@@ -116,7 +179,7 @@ class H(BaseHTTPRequestHandler):
             c = db()
             try:
                 with DB_LOCK:
-                    c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
+                    c.execute("INSERT INTO addresses(address, token_hash, created_at) VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
                 return self.sendj(200, {"address": address, "token": tok, "domain": dom})
             except sqlite3.IntegrityError:
                 return self.sendj(409, {"error": "taken"})
@@ -129,7 +192,7 @@ class H(BaseHTTPRequestHandler):
             c = db()
             try:
                 with DB_LOCK:
-                    c.execute("INSERT INTO addresses VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
+                    c.execute("INSERT INTO addresses(address, token_hash, created_at) VALUES(?,?,?)", (address, h(tok), int(time.time()))); c.commit()
                 return self.sendj(200, {"address": address, "token": tok, "domain": dom})
             except sqlite3.IntegrityError: continue
             finally: c.close()
