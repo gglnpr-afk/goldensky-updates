@@ -1,8 +1,2 @@
-ss://YWVzLTEyOC1nY206NTc1M2ZhMmRkZmY5NDUxNmJiNjVlODBj@busterzone.mobi:8388#GOLDENSKY-SS2
-vmess://eyJ2IjoiMiIsInBzIjoiR09MREVOU0tZLUZSRUUyIiwiYWRkIjoiYnVzdGVyem9uZS5tb2JpIiwicG9ydCI6IjgwODAiLCJpZCI6IjJmZjExMDZhLTMxNGYtNDlmYS1hNjc1LWNlMTZhZmY5ZjgzMSIsImFpZCI6IjAiLCJuZXQiOiJ0Y3AiLCJ0eXBlIjoibm9uZSIsImhvc3QiOiIiLCJwYXRoIjoiIiwidGxzIjoiIn0=
-ss://YWVzLTEyOC1nY206YzkyMDY0ZGNmYWIyNDhmNWIxY2JlZmQx@donatekey.realty:8388#GOLDENSKY-SG
-vmess://eyJ2IjoiMiIsInBzIjoiR09MREVOU0tZLVNHLVZNRVNTIiwiYWRkIjoiZG9uYXRla2V5LnJlYWx0eSIsInBvcnQiOiI4MDgwIiwiaWQiOiJiYmZmOGY1MC1iZjkzLTRkYjEtYWQ0ZS04MzkyZDc5NzlkMjciLCJhaWQiOiIwIiwibmV0IjoidGNwIiwidHlwZSI6Im5vbmUiLCJob3N0IjoiIiwicGF0aCI6IiIsInRscyI6IiJ9
-vless://42ccb79a-a7c0-4d14-9c0a-5a1d1e68dc57@blog.chithinphyu.info:443?encryption=none&security=tls&sni=blog.chithinphyu.info&fp=chrome&alpn=http%2F1.1&type=ws&host=blog.chithinphyu.info&path=%2Fblog#Zero-Trust
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTozZ0F3R3l1b0ZXSG5QVEdZZFNrcGRaUmIvM3lOLzJoSW1hRHRuZlJFTVhvPQ@84.247.159.191:42411?type=tcp#%F0%9F%92%A5Premium%20By%20SisNaing%F0%9F%92%A5-%F0%9F%87%AF%F0%9F%87%B5%F0%9F%87%AF%F0%9F%87%B5
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpidmJKeUpCRjg5YmhxZzM1d1NCc1Rs@sg3.kshinfo.works:63199/?outline=1#Telegram%20Sg
-hy2://a2ba4aff43ff6fbb55a804b3@busterzone.mobi:8443?sni=busterzone.mobi#GOLDENSKY-HY2
+ss://YWVzLTEyOC1nY206WEI4MDhLQnJDNktEM3FhTHdHK25iZz09@chithinphyu.info:8388#GOLDENSKY-SG2
+vless://ca5e7b36-0eef-4797-96bb-ca14f5f337ef@vpn.chithinphyu.info:443?encryption=none&security=tls&sni=vpn.chithinphyu.info&fp=chrome&type=ws&host=vpn.chithinphyu.info&path=/vless&alpn=http%2F1.1#GOLDENSKY-SG2-WS
