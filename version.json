@@ -1,6 +1,6 @@
 {
-  "version_code": 450,
-  "version_name": "1.0.33",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.33/goldensky.6.apk",
-  "notes": "License key စနစ် ဖယ်ရှားလိုက်ပါပြီ — နောက်ထပ် key ထည့်စရာ မလိုဘဲ တန်းသုံးနိုင်ပါပြီ။"
+  "version_code": 453,
+  "version_name": "1.0.36",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.36/goldensky-1.0.36.apk",
+  "notes": "SSH engine အသစ် ပြောင်းထားပါတယ် — SSH key တွေ ပိုတည်ငြိမ်လာပြီး UDP (voice call / ဂိမ်း) လည်း သုံးလို့ ရပါပြီ။"
 }
