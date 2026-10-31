@@ -149,6 +149,7 @@ def handle(client):
                 return
         client.settimeout(None)
         server = socket.create_connection(TARGET, timeout=10)
+        server.settimeout(None)  # connect timeout must NOT stay on the data socket (2026-10-20 lesson)
         client.sendall(RESP)
         t1 = threading.Thread(target=pipe, args=(client, server, "up"), daemon=True)
         t2 = threading.Thread(target=pipe, args=(server, client, "down"), daemon=True)
