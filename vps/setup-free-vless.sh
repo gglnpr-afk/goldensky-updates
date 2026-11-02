@@ -11,13 +11,13 @@
 # byte-counting bridge, which is already proven in production:
 #
 #   phone -> Cloudflare edge -> cloudflared tunnel
-#         -> gs-meter relay (127.0.0.1:3458, counts every byte)
-#         -> Xray vless-free inbound (127.0.0.1:3457, path /vless)
+#         -> gs-meter relay (127.0.0.1:3461, counts every byte)
+#         -> Xray vless-free inbound (127.0.0.1:3460, path /vless)
 #
 # What it does (all additive, existing inbounds/customers untouched):
-# - Adds a DEDICATED VLESS+WS inbound on 127.0.0.1:3457 (tag
+# - Adds a DEDICATED VLESS+WS inbound on 127.0.0.1:3460 (tag
 #   "vless-free") with ONE client (email "free300", fresh UUID).
-# - Installs gs-meter.py as a systemd service (gs-meter) on :3458,
+# - Installs gs-meter.py as a systemd service (gs-meter) on :3461,
 #   keeping the cumulative pool total in /var/lib/gs-free/bytes.txt.
 # - Installs gs-free-guard.sh (cron, every 5 min): when the total
 #   reaches 300 GiB it REMOVES the free client (backup + xray -test
@@ -28,7 +28,7 @@
 #
 # ONE MANUAL STEP (Cloudflare dashboard, Zero Trust -> Tunnels ->
 # goldensky-fb -> Public Hostnames -> Add):
-#   free.chithinphyu.info  ->  http://127.0.0.1:3458
+#   free.chithinphyu.info  ->  http://127.0.0.1:3461
 # Without that route the key cannot be reached from the internet.
 #
 # RE-RUNNING = RENEW: fresh UUID, usage counter reset, key re-armed.
@@ -42,8 +42,8 @@ CFG="${GS_CFG:-/usr/local/etc/xray/config.json}"
 XRAY="${GS_XRAY:-/usr/local/bin/xray}"
 EMAIL="free300"
 TAG="vless-free"
-PORT=3457
-RELAY_PORT=3458
+PORT=3460
+RELAY_PORT=3461
 WS_PATH="/vless"
 DOMAIN="${GS_FREE_DOMAIN:-free.chithinphyu.info}"
 NAME="GOLDENSKY-SG-FREE-300GB"
@@ -56,10 +56,10 @@ if [ "$(id -u)" != "0" ]; then echo "Run as root (sudo)."; exit 1; fi
 command -v python3 >/dev/null || { echo "python3 missing"; exit 1; }
 [ -x "$XRAY" ] || { echo "xray binary not found: $XRAY"; exit 1; }
 if ss -tln 2>/dev/null | grep -q ":$PORT " && ! grep -q "\"$TAG\"" "$CFG"; then
-  echo "Port $PORT is used by something else — aborting."; exit 1
+  echo "Port $PORT is used by something else — aborting:"; ss -tlnp 2>/dev/null | grep ":$PORT "; exit 1
 fi
 if ss -tln 2>/dev/null | grep -q ":$RELAY_PORT " && ! systemctl is-active --quiet gs-meter 2>/dev/null; then
-  echo "Port $RELAY_PORT is used by something else — aborting."; exit 1
+  echo "Port $RELAY_PORT is used by something else — aborting:"; ss -tlnp 2>/dev/null | grep ":$RELAY_PORT "; exit 1
 fi
 
 UUID="$(cat /proc/sys/kernel/random/uuid)"
@@ -107,17 +107,17 @@ cat > /usr/local/bin/gs-meter.py <<'PYEOF'
 #!/usr/bin/env python3
 """gs-meter: byte-counting TCP relay for the GOLDENSKY free VLESS pool.
 
-Listens on 127.0.0.1:3458 (cloudflared points here), forwards to the
-Xray vless-free inbound on 127.0.0.1:3457, and keeps a cumulative byte
+Listens on the relay port (cloudflared points here), forwards to the
+Xray vless-free inbound, and keeps a cumulative byte
 total (both directions) in /var/lib/gs-free/bytes.txt. The total is the
 pool usage that gs-free-guard.sh enforces the 300 GiB quota against.
 """
 import asyncio, os, signal, sys, time
 
 LISTEN_HOST = "127.0.0.1"
-LISTEN_PORT = int(os.environ.get("GS_METER_LISTEN_PORT", "3458"))
+LISTEN_PORT = int(os.environ.get("GS_METER_LISTEN_PORT", "3461"))
 TARGET_HOST = "127.0.0.1"
-TARGET_PORT = int(os.environ.get("GS_METER_TARGET_PORT", "3457"))
+TARGET_PORT = int(os.environ.get("GS_METER_TARGET_PORT", "3460"))
 BYTES_FILE = os.environ.get("GS_METER_BYTES_FILE", "/var/lib/gs-free/bytes.txt")
 
 total = 0
@@ -207,12 +207,14 @@ chmod +x /usr/local/bin/gs-meter.py
 python3 -c "import ast; ast.parse(open('/usr/local/bin/gs-meter.py').read())" \
   && echo "meter syntax OK" || { echo "meter syntax FAILED"; exit 1; }
 
-cat > /etc/systemd/system/gs-meter.service <<'UNITEOF'
+cat > /etc/systemd/system/gs-meter.service <<UNITEOF
 [Unit]
-Description=GOLDENSKY free-pool byte meter relay (3458 -> 3457)
+Description=GOLDENSKY free-pool byte meter relay
 After=network.target xray.service
 
 [Service]
+Environment=GS_METER_LISTEN_PORT=$RELAY_PORT
+Environment=GS_METER_TARGET_PORT=$PORT
 ExecStart=/usr/bin/python3 /usr/local/bin/gs-meter.py
 Restart=always
 RestartSec=2
