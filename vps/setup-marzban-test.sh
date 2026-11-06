@@ -39,6 +39,44 @@ DOMAIN="${1:-}"
 [ "$(id -u)" = "0" ] || { echo "Run as root (sudo)."; exit 1; }
 
 echo "=== Marzban TEST installer (domain: $DOMAIN) ==="
+grep PRETTY_NAME /etc/os-release 2>/dev/null || cat /etc/os-release 2>/dev/null || true
+
+# ---------- package manager + prerequisites ----------
+# v1.1: this kit first ran on a RHEL-family box (no apt-get, no python3)
+# and died. Detect apt/dnf/yum and install prereqs with the right one.
+if command -v apt-get >/dev/null 2>&1; then PKG=apt
+elif command -v dnf >/dev/null 2>&1; then PKG=dnf
+elif command -v yum >/dev/null 2>&1; then PKG=yum
+else
+  echo "!! No apt-get / dnf / yum found — unsupported OS for this kit. Aborting."
+  exit 1
+fi
+echo "-- package manager: $PKG"
+pkg_install() {
+  if [ "$PKG" = "apt" ]; then
+    apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@"
+  elif [ "$PKG" = "dnf" ]; then
+    dnf install -y "$@"
+  else
+    yum install -y "$@"
+  fi
+}
+NEED=""
+command -v python3 >/dev/null 2>&1 || NEED="$NEED python3"
+command -v curl    >/dev/null 2>&1 || NEED="$NEED curl"
+command -v openssl >/dev/null 2>&1 || NEED="$NEED openssl"
+if [ "$PKG" = "apt" ]; then
+  command -v ss    >/dev/null 2>&1 || NEED="$NEED iproute2"
+  command -v pgrep >/dev/null 2>&1 || NEED="$NEED procps"
+else
+  command -v ss    >/dev/null 2>&1 || NEED="$NEED iproute"
+  command -v pgrep >/dev/null 2>&1 || NEED="$NEED procps-ng"
+fi
+if [ -n "$NEED" ]; then
+  echo "-- installing prerequisites:$NEED"
+  pkg_install $NEED >/dev/null 2>&1 || pkg_install $NEED
+fi
+command -v python3 >/dev/null 2>&1 || { echo "!! python3 still missing after install attempt. Aborting."; exit 1; }
 
 # ---------- safety: fresh box only ----------
 if [ -d /opt/marzban ] && [ "${FORCE:-0}" != "1" ]; then
@@ -64,9 +102,6 @@ for p in 80 443 8443 1080; do
     exit 1
   fi
 done
-command -v python3 >/dev/null 2>&1 || { echo "-- installing python3..."; apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 curl openssl >/dev/null; }
-command -v curl >/dev/null 2>&1 || DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl >/dev/null
-
 # ---------- public IP + domain check ----------
 PUB_IP=$(curl -s -m 10 https://api.ipify.org || curl -s -m 10 https://ifconfig.me || true)
 PUB_IP=$(printf '%s' "$PUB_IP" | tr -dc '0-9.')
@@ -84,7 +119,7 @@ try:
 except Exception as e:
     print("ERROR:%s" % e)
 PYEOF
-)
+) || HIT=""
 case "$HIT" in
   MATCH) echo "   OK: $DOMAIN -> $PUB_IP" ;;
   NOMATCH:*) echo "!! $DOMAIN resolves to ${HIT#NOMATCH:} — not this server ($PUB_IP)."
@@ -196,14 +231,51 @@ for i in $(seq 1 30); do sleep 2; curl -s -m 3 -o /dev/null http://127.0.0.1:800
 
 # ---------- Caddy on :8443 (HTTPS for panel + subscriptions) ----------
 echo "-- installing Caddy (panel HTTPS on :8443)..."
+install_caddy_binary() {
+  # OS-agnostic fallback: official static binary + our own systemd unit.
+  curl -fsSL -o /tmp/caddy-bin "https://caddyserver.com/api/download?os=linux&arch=amd64"
+  install -m 0755 /tmp/caddy-bin /usr/local/bin/caddy
+  rm -f /tmp/caddy-bin
+  if ! systemctl cat caddy >/dev/null 2>&1; then
+    id caddy >/dev/null 2>&1 || useradd --system --home-dir /var/lib/caddy --create-home --shell /bin/false caddy
+    mkdir -p /etc/caddy /var/lib/caddy /var/log/caddy
+    chown -R caddy:caddy /var/lib/caddy /var/log/caddy || true
+    cat > /etc/systemd/system/caddy.service <<'UNIT'
+[Unit]
+Description=Caddy
+Documentation=https://caddyserver.com/docs/
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+ExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile
+ExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  fi
+}
 if ! command -v caddy >/dev/null 2>&1; then
-  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null 2>&1 || {
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl gnupg >/dev/null
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-    apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null
-  }
+  if [ "$PKG" = "apt" ]; then
+    pkg_install caddy >/dev/null 2>&1 || {
+      pkg_install debian-keyring debian-archive-keyring apt-transport-https gnupg >/dev/null 2>&1 || true
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+      pkg_install caddy >/dev/null 2>&1 || true
+    }
+  fi
+  command -v caddy >/dev/null 2>&1 || install_caddy_binary
 fi
+command -v caddy >/dev/null 2>&1 || { echo "!! Caddy install failed on this OS. Aborting (Marzban itself is up on 127.0.0.1:8000)."; exit 1; }
 cat > /etc/caddy/Caddyfile <<EOF
 https://$DOMAIN:8443 {
     reverse_proxy 127.0.0.1:8000
@@ -307,13 +379,19 @@ print("extracted %d raw links" % len(links))
 PYEOF
 chmod 600 /root/marzban-links.txt 2>/dev/null || true
 
-# ---------- firewall (only if ufw is active) ----------
-if ufw status 2>/dev/null | grep -q "Status: active"; then
+# ---------- firewall (only the active one is touched) ----------
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
   ufw allow 80/tcp >/dev/null 2>&1 || true
   ufw allow 443/tcp >/dev/null 2>&1 || true
   ufw allow 8443/tcp >/dev/null 2>&1 || true
   ufw allow 1080/tcp >/dev/null 2>&1 || true
   ufw allow 1080/udp >/dev/null 2>&1 || true
+fi
+if command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+  for fp in 80/tcp 443/tcp 8443/tcp 1080/tcp 1080/udp; do
+    firewall-cmd --permanent --add-port="$fp" >/dev/null 2>&1 || true
+  done
+  firewall-cmd --reload >/dev/null 2>&1 || true
 fi
 
 # ---------- final summary ----------
