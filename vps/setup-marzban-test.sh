@@ -80,9 +80,19 @@ command -v python3 >/dev/null 2>&1 || { echo "!! python3 still missing after ins
 
 # ---------- safety: fresh box only ----------
 if [ -d /opt/marzban ] && [ "${FORCE:-0}" != "1" ]; then
-  echo "!! /opt/marzban already exists — Marzban is already installed. Aborting."
-  echo "   Manage it with the 'marzban' command instead of re-running this kit."
-  exit 1
+  if [ ! -f /opt/marzban/.env ] && [ ! -f /var/lib/marzban/db.sqlite3 ]; then
+    # Partial install from an earlier failed run of THIS kit (the app never
+    # started: no .env, no database, so no users/data can exist yet).
+    BK="/opt/marzban.bak-$(date +%s)"
+    echo "!! Found a PARTIAL Marzban install (no .env, no database)."
+    echo "   Moving it to $BK and continuing fresh."
+    mv /opt/marzban "$BK"
+    if [ -d /var/lib/marzban ]; then mv /var/lib/marzban "/var/lib/marzban.bak-$(date +%s)"; fi
+  else
+    echo "!! /opt/marzban already exists — Marzban is already installed. Aborting."
+    echo "   Manage it with the 'marzban' command instead of re-running this kit."
+    exit 1
+  fi
 fi
 FOUND=""
 for svc in x-ui sing-box hysteria gs-tuic gs-hy2-any; do
@@ -127,6 +137,32 @@ case "$HIT" in
              exit 1 ;;
   *) echo "!! DNS check failed ($HIT) — continuing; HTTPS cert will fail if the domain is wrong." ;;
 esac
+
+# ---------- Docker pre-install for RHEL-family ----------
+# v1.2: get.docker.com (used by the Marzban installer) REJECTS AlmaLinux
+# ("Unsupported distribution 'almalinux'"). Install Docker ourselves from
+# Docker's CentOS repo first — the Marzban installer then skips its own
+# Docker step. The compose PLUGIN satisfies its detect_compose check.
+if ! command -v docker >/dev/null 2>&1; then
+  if [ "$PKG" = "dnf" ] || [ "$PKG" = "yum" ]; then
+    echo "-- installing Docker from Docker's CentOS repo (get.docker.com does not support AlmaLinux)..."
+    pkg_install dnf-plugins-core >/dev/null 2>&1 || pkg_install yum-utils >/dev/null 2>&1 || true
+    if command -v dnf >/dev/null 2>&1; then
+      dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      dnf install -y --allowerasing docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    else
+      yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      yum install -y --allowerasing docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    fi
+    systemctl daemon-reload || true
+    systemctl enable docker >/dev/null 2>&1 || true
+    systemctl restart docker || systemctl start docker
+  fi
+fi
+if command -v docker >/dev/null 2>&1; then
+  docker --version || true
+  docker compose version >/dev/null 2>&1 || echo "WARNING: 'docker compose' plugin missing — Marzban installer may fail at the compose step."
+fi
 
 # ---------- official Marzban install (SQLite), logs detached ----------
 echo "-- installing Marzban (official script, SQLite)... this takes a few minutes"
