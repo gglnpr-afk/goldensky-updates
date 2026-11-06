@@ -78,8 +78,17 @@ if [ -n "$NEED" ]; then
 fi
 command -v python3 >/dev/null 2>&1 || { echo "!! python3 still missing after install attempt. Aborting."; exit 1; }
 
-# ---------- safety: fresh box only ----------
-if [ -d /opt/marzban ] && [ "${FORCE:-0}" != "1" ]; then
+# ---------- safety / state detection ----------
+# v1.3 RESUME: an earlier run of THIS kit got Marzban installed + configured
+# (has .env, login file, and our REALITY inbound) but stopped later
+# (e.g. at the Caddy step). Resume that state instead of aborting.
+RESUME=0; CONFIGURED=0
+if [ -f /opt/marzban/.env ] && [ -f /root/marzban-login.txt ]; then
+  RESUME=1
+  if grep -q "VLESS TCP REALITY" /var/lib/marzban/xray_config.json 2>/dev/null; then CONFIGURED=1; fi
+  echo "-- RESUME mode: Marzban already installed by an earlier run of this kit (configured=$CONFIGURED)."
+fi
+if [ "$RESUME" != "1" ] && [ -d /opt/marzban ] && [ "${FORCE:-0}" != "1" ]; then
   if [ ! -f /opt/marzban/.env ] && [ ! -f /var/lib/marzban/db.sqlite3 ]; then
     # Partial install from an earlier failed run of THIS kit (the app never
     # started: no .env, no database, so no users/data can exist yet).
@@ -94,24 +103,26 @@ if [ -d /opt/marzban ] && [ "${FORCE:-0}" != "1" ]; then
     exit 1
   fi
 fi
-FOUND=""
-for svc in x-ui sing-box hysteria gs-tuic gs-hy2-any; do
-  systemctl is-active --quiet "$svc" 2>/dev/null && FOUND="$FOUND $svc"
-done
-pgrep -x xray >/dev/null 2>&1 && FOUND="$FOUND xray-process"
-[ -n "$FOUND" ] && [ "${FORCE:-0}" != "1" ] && {
-  echo "!! Production-looking services are RUNNING on this box:$FOUND"
-  echo "   Marzban would take over Xray and BREAK them. Aborting (nothing changed)."
-  echo "   Run this kit on a NEW / empty VPS only."
-  exit 1
-}
-for p in 80 443 8443 1080; do
-  if ss -ltn | grep -q ":${p}[[:space:]]"; then
-    echo "!! TCP $p is already in use. Aborting (nothing changed):"
-    ss -ltnp | grep ":${p}[[:space:]]" || true
+if [ "$RESUME" != "1" ]; then
+  FOUND=""
+  for svc in x-ui sing-box hysteria gs-tuic gs-hy2-any; do
+    systemctl is-active --quiet "$svc" 2>/dev/null && FOUND="$FOUND $svc"
+  done
+  pgrep -x xray >/dev/null 2>&1 && FOUND="$FOUND xray-process"
+  [ -n "$FOUND" ] && [ "${FORCE:-0}" != "1" ] && {
+    echo "!! Production-looking services are RUNNING on this box:$FOUND"
+    echo "   Marzban would take over Xray and BREAK them. Aborting (nothing changed)."
+    echo "   Run this kit on a NEW / empty VPS only."
     exit 1
-  fi
-done
+  }
+  for p in 80 443 8443 1080; do
+    if ss -ltn | grep -q ":${p}[[:space:]]"; then
+      echo "!! TCP $p is already in use. Aborting (nothing changed):"
+      ss -ltnp | grep ":${p}[[:space:]]" || true
+      exit 1
+    fi
+  done
+fi
 # ---------- public IP + domain check ----------
 PUB_IP=$(curl -s -m 10 https://api.ipify.org || curl -s -m 10 https://ifconfig.me || true)
 PUB_IP=$(printf '%s' "$PUB_IP" | tr -dc '0-9.')
@@ -162,6 +173,23 @@ fi
 if command -v docker >/dev/null 2>&1; then
   docker --version || true
   docker compose version >/dev/null 2>&1 || echo "WARNING: 'docker compose' plugin missing — Marzban installer may fail at the compose step."
+fi
+
+if [ "$CONFIGURED" = "1" ]; then
+  ADMIN_USER=admin
+  ADMIN_PASS=$(grep "Password:" /root/marzban-login.txt | awk '{print $NF}')
+  [ -n "$ADMIN_PASS" ] || { echo "!! Could not read the admin password from /root/marzban-login.txt. Aborting."; exit 1; }
+  echo "-- RESUME: install + config already done. Continuing at the Caddy step."
+  # make sure the app is actually up before continuing
+  for i in $(seq 1 15); do curl -s -m 3 -o /dev/null http://127.0.0.1:8000/ && break; sleep 2; done
+else
+if [ "$RESUME" = "1" ]; then
+  # Installed but never configured: no users can exist yet in this kit's
+  # lifecycle (users are only created after the config step), so the
+  # half-finished tree is moved aside and the install starts fresh.
+  echo "-- RESUME: half-configured tree found; moving it aside and reinstalling."
+  mv /opt/marzban "/opt/marzban.bak-$(date +%s)"
+  if [ -d /var/lib/marzban ]; then mv /var/lib/marzban "/var/lib/marzban.bak-$(date +%s)"; fi
 fi
 
 # ---------- official Marzban install (SQLite), logs detached ----------
@@ -264,63 +292,31 @@ echo "-- restarting Marzban with the new config..."
 # NOTE: plain `docker compose restart` does NOT re-read .env — must down+up.
 marzban restart -n >/dev/null 2>&1 || docker compose -f /opt/marzban/docker-compose.yml -p marzban up -d --force-recreate marzban >/dev/null 2>&1 || true
 for i in $(seq 1 30); do sleep 2; curl -s -m 3 -o /dev/null http://127.0.0.1:8000/ && break; done
-
-# ---------- Caddy on :8443 (HTTPS for panel + subscriptions) ----------
-echo "-- installing Caddy (panel HTTPS on :8443)..."
-install_caddy_binary() {
-  # OS-agnostic fallback: official static binary + our own systemd unit.
-  curl -fsSL -o /tmp/caddy-bin "https://caddyserver.com/api/download?os=linux&arch=amd64"
-  install -m 0755 /tmp/caddy-bin /usr/local/bin/caddy
-  rm -f /tmp/caddy-bin
-  if ! systemctl cat caddy >/dev/null 2>&1; then
-    id caddy >/dev/null 2>&1 || useradd --system --home-dir /var/lib/caddy --create-home --shell /bin/false caddy
-    mkdir -p /etc/caddy /var/lib/caddy /var/log/caddy
-    chown -R caddy:caddy /var/lib/caddy /var/log/caddy || true
-    cat > /etc/systemd/system/caddy.service <<'UNIT'
-[Unit]
-Description=Caddy
-Documentation=https://caddyserver.com/docs/
-After=network.target network-online.target
-Requires=network-online.target
-
-[Service]
-Type=notify
-User=caddy
-Group=caddy
-ExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile
-ExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --force
-TimeoutStopSec=5s
-LimitNOFILE=1048576
-PrivateTmp=true
-ProtectSystem=full
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-  fi
-}
-if ! command -v caddy >/dev/null 2>&1; then
-  if [ "$PKG" = "apt" ]; then
-    pkg_install caddy >/dev/null 2>&1 || {
-      pkg_install debian-keyring debian-archive-keyring apt-transport-https gnupg >/dev/null 2>&1 || true
-      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-      pkg_install caddy >/dev/null 2>&1 || true
-    }
-  fi
-  command -v caddy >/dev/null 2>&1 || install_caddy_binary
 fi
-command -v caddy >/dev/null 2>&1 || { echo "!! Caddy install failed on this OS. Aborting (Marzban itself is up on 127.0.0.1:8000)."; exit 1; }
+
+# ---------- Caddy on :8443 — as a Docker container (v1.3) ----------
+# Host-package Caddy installs are OS-fragile (failed on AlmaLinux). Docker
+# is already here for Marzban, so Caddy runs as a container with host
+# networking: it binds :80 (ACME) + :8443 directly and proxies to the app.
+echo "-- starting Caddy container (panel HTTPS on :8443)..."
+mkdir -p /etc/caddy
 cat > /etc/caddy/Caddyfile <<EOF
 https://$DOMAIN:8443 {
     reverse_proxy 127.0.0.1:8000
 }
 EOF
-caddy validate --config /etc/caddy/Caddyfile >/dev/null
-systemctl daemon-reload || true
-systemctl enable caddy >/dev/null 2>&1 || true
-systemctl restart caddy
+docker rm -f gs-caddy >/dev/null 2>&1 || true
+docker run -d --name gs-caddy --restart unless-stopped --network host \
+  -v /etc/caddy:/etc/caddy:ro,z \
+  -v gs-caddy-data:/data \
+  -v gs-caddy-config:/config \
+  caddy:2 >/dev/null
+sleep 3
+docker ps --format '{{.Names}} {{.Status}}' | grep gs-caddy || {
+  echo "!! Caddy container did not stay up. Logs:"
+  docker logs --tail 30 gs-caddy || true
+  exit 1
+}
 echo "-- waiting for HTTPS (cert issuing can take ~1 min)..."
 HTTPS=0
 for i in $(seq 1 30); do
@@ -331,7 +327,7 @@ done
 if [ "$HTTPS" != "1" ]; then
   echo "!! Panel HTTPS did not answer 200 at https://$DOMAIN:8443/dashboard/"
   echo "   Check: TCP 80 + 8443 open in the provider firewall? DNS right?"
-  echo "   Caddy log: journalctl -u caddy -n 30"
+  echo "   Caddy log: docker logs --tail 30 gs-caddy"
   echo "   (Marzban itself is up on 127.0.0.1:8000 — login details in /root/marzban-login.txt)"
   exit 1
 fi
@@ -370,8 +366,10 @@ def req(method, path, data=None, token=None, form=False):
 tok = req("POST", "/api/admin/token", {"username": user, "password": pw}, form=True)["access_token"]
 expire = int(time.time()) + 30 * 24 * 3600
 out = {"panel": base + "/dashboard/", "users": {}}
+import urllib.error
 for name, limit in [("test5gb", 5 * 1024**3), ("burn100mb", 100 * 1024**2)]:
-    u = req("POST", "/api/user", {
+    try:
+        u = req("POST", "/api/user", {
         "username": name,
         "proxies": {"vless": {"flow": "xtls-rprx-vision"}, "shadowsocks": {}},
         "inbounds": {"vless": ["VLESS TCP REALITY"], "shadowsocks": ["Shadowsocks TCP"]},
@@ -379,7 +377,11 @@ for name, limit in [("test5gb", 5 * 1024**3), ("burn100mb", 100 * 1024**2)]:
         "data_limit": limit,
         "data_limit_reset_strategy": "day",
         "status": "active",
-    }, token=tok)
+        }, token=tok)
+    except urllib.error.HTTPError as e:
+        if e.code != 409:
+            raise
+        u = req("GET", "/api/user/" + name, token=tok)  # exists: reuse
     out["users"][name] = {"data_limit": limit, "reset": "day",
                           "subscription_url": u.get("subscription_url", "")}
     print("created user:", name)
