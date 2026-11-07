@@ -119,7 +119,7 @@ def mz_get_user(name):
 def mz_create_user(name, note):
     body = {
         "username": name,
-        "proxies": {"vless": {"flow": "xtls-rprx-vision"}, "shadowsocks": {}},
+        "proxies": {"vless": {}, "shadowsocks": {}},
         "inbounds": {"vless": ["VLESS TCP REALITY"], "shadowsocks": ["Shadowsocks TCP"]},
         "expire": int(time.time()) + KEY_DAYS * 24 * 3600,
         "data_limit": KEY_GB * 1024 ** 3,
