@@ -2,11 +2,14 @@
 # ============================================================
 # setup-hy2-dpi-marz.sh — "strongest DPI" Hysteria2 pair for the
 # Marzban box (83.147.235.168 / marz.gloriafreeproton.io).
-# Marker: gs-hy2-dpi v1
+# Marker: gs-hy2-dpi v1.1
 #
 # Installs TWO independent hysteria instances that COEXIST with
 # Marzban (panel :8443/tcp, Plain VLESS :443/tcp, SS :1080):
 # TCP and UDP are separate, so UDP 443 does not touch VLESS.
+# v1.1: PLAIN moved 8443 -> 9443 — the panel's Caddy also binds
+# UDP 8443 (HTTP/3 for the panel site), found on the first
+# on-box run 2026-11-07 (kit aborted safely, nothing changed).
 #
 #   1) gs-hy2-strong  UDP 443   + Salamander obfs + port hopping
 #      (iptables REDIRECT UDP 20000-30000 -> 443)
@@ -18,7 +21,7 @@
 #         entirely (source-verified 2026-11-07), so it would try to
 #         connect WITHOUT the obfs mask and the server rejects it.
 #
-#   2) gs-hy2-plain   UDP 8443  plain HY2 (no obfs, no hopping)
+#   2) gs-hy2-plain   UDP 9443  plain HY2 (no obfs, no hopping)
 #      -> GOLDENSKY-compatible link (same QUIC + masquerade +
 #         real cert; just no salamander scramble).
 #      -> Apps: GOLDENSKY, Aeriva, v2rayNG.
@@ -47,8 +50,8 @@
 set -e
 
 DOMAIN="${1:-marz.gloriafreeproton.io}"
-STRONG_PORT=443
-PLAIN_PORT=8443
+STRONG_PORT="${STRONG_PORT:-443}"
+PLAIN_PORT="${PLAIN_PORT:-9443}"
 HOP_LO=20000
 HOP_HI=30000
 DIR=/etc/hysteria-dpi
