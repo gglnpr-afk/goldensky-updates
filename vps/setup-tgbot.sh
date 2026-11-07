@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GOLDENSKY Telegram Bot installer - issues 5GB/day keys from the Marzban
+# GOLDENSKY Telegram Bot installer - issues 50GB/day keys from the Marzban
 # panel installed by setup-marzban-test.sh on THIS box.
 #   sudo bash setup-tgbot.sh
 # The BotFather token is prompted for INSIDE this terminal (never leaves
@@ -15,7 +15,7 @@ mkdir -p /opt/gs-bot
 # ---------- bot code ----------
 cat > /opt/gs-bot/bot.py <<'BOTPYEOF'
 #!/usr/bin/env python3
-# GOLDENSKY Telegram bot - issues 5GB/day Marzban keys.
+# GOLDENSKY Telegram bot - issues 50GB/day Marzban keys.
 # Stdlib only (works on AlmaLinux python3.6+). Config: /opt/gs-bot/bot.env
 import json, os, sys, time, html, urllib.request, urllib.parse, urllib.error
 
@@ -39,7 +39,7 @@ MZ_BASE = CFG.get("MZ_BASE", "http://127.0.0.1:8000").rstrip("/")
 MZ_USER = CFG.get("MZ_USER", "admin")
 MZ_PASS = CFG["MZ_PASS"]
 PUBLIC_BASE = CFG.get("PUBLIC_BASE", "").rstrip("/")
-KEY_GB = int(CFG.get("KEY_GB", "5"))
+KEY_GB = int(CFG.get("KEY_GB", "50"))
 KEY_DAYS = int(CFG.get("KEY_DAYS", "30"))
 TG = "https://api.telegram.org/bot" + BOT_TOKEN
 
@@ -67,13 +67,13 @@ def answer_cb(cb_id, text=""):
     except Exception:
         pass
 
-MENU = [[{"text": "🎁 5GB Key ရယူရန်", "callback_data": "claim"}],
+MENU = [[{"text": "🎁 50GB Key ရယူရန်", "callback_data": "claim"}],
         [{"text": "🔑 ကျွန်တော့် Key", "callback_data": "mykey"},
          {"text": "📊 အသုံးပြုမှု", "callback_data": "usage"}]]
 
-WELCOME = ("👋 မင်္ဂလာပါ <b>GOLDENSKY Free 5GB</b> Bot ပါ\n\n"
-           "ဒီ Bot ကနေ <b>တစ်ရက် 5GB</b> သုံးနိုင်တဲ့ Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
-           "5GB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။\n\n"
+WELCOME = ("👋 မင်္ဂလာပါ <b>GOLDENSKY Free 50GB</b> Bot ပါ\n\n"
+           "ဒီ Bot ကနေ <b>တစ်ရက် 50GB</b> သုံးနိုင်တဲ့ Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
+           "50GB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။\n\n"
            "စဖို့ အောက်က ခလုတ်ကို နှိပ်ပါ 👇")
 
 # ---------------- Marzban helpers ----------------
@@ -241,7 +241,7 @@ def handle_mykey(chat_id, tg_user):
     try:
         user = mz_get_user(uname_for(tg_user))
         if not user:
-            send(chat_id, "Key မရှိသေးပါ။ '🎁 5GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
+            send(chat_id, "Key မရှိသေးပါ။ '🎁 50GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
             return
         if user.get("status") == "expired":
             user = mz_renew_user(uname_for(tg_user))
@@ -254,7 +254,7 @@ def handle_usage(chat_id, tg_user):
     try:
         user = mz_get_user(uname_for(tg_user))
         if not user:
-            send(chat_id, "Key မရှိသေးပါ။ '🎁 5GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
+            send(chat_id, "Key မရှိသေးပါ။ '🎁 50GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
             return
         send(chat_id, usage_message(user), MENU)
     except Exception as e:
@@ -328,7 +328,7 @@ MZ_BASE=http://127.0.0.1:8000
 MZ_USER=admin
 MZ_PASS=$ADMIN_PASS
 PUBLIC_BASE=https://$DOMAIN:8443
-KEY_GB=5
+KEY_GB=50
 KEY_DAYS=30
 ENVEOF
 chmod 600 /opt/gs-bot/bot.env
@@ -337,7 +337,7 @@ echo "OK: config written (/opt/gs-bot/bot.env, 600)"
 # ---------- systemd service ----------
 cat > /etc/systemd/system/gs-tgbot.service <<'UNIT'
 [Unit]
-Description=GOLDENSKY Telegram Bot (5GB/day keys via Marzban)
+Description=GOLDENSKY Telegram Bot (50GB/day keys via Marzban)
 After=network.target docker.service
 Wants=docker.service
 
@@ -385,6 +385,6 @@ else
   echo "   Bot     : token saved, but Telegram getMe check failed -"
   echo "             check the token and: journalctl -u gs-tgbot -n 20"
 fi
-echo "   Keys    : 5GB/day per Telegram user, auto-refill daily, 30-day expiry"
-echo "   Test    : open the bot, tap Start, then the '5GB Key' button"
+echo "   Keys    : 50GB/day per Telegram user, auto-refill daily, 30-day expiry"
+echo "   Test    : open the bot, tap Start, then the '50GB Key' button"
 echo "=================================================================="
