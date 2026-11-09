@@ -64,8 +64,17 @@ tin = tgt.setdefault("inbounds", [])
 by_port = {}
 for ib in tin:
     by_port.setdefault(ib.get("port"), ib)
-tags = {ib.get("tag") for ib in tin}
+tags = {ib.get("tag") for ib in tin if ib.get("tag")}
 conflicts = []
+
+def uniq_tag(base):
+    t = base or "inbound-mig"
+    cand, n = t, 2
+    while cand in tags:
+        cand = f"{t}-mig" if n == 2 else f"{t}-mig{n}"
+        n += 1
+    tags.add(cand)
+    return cand
 
 def ss_passwords(s):
     pws = []
@@ -82,9 +91,8 @@ for aib in aws.get("inbounds", []):
     tib = by_port.get(port)
     if tib is None:
         nib = copy.deepcopy(aib)
-        if nib.get("tag") in tags:
-            nib["tag"] = str(nib.get("tag")) + "-mig"
-        tin.append(nib); by_port[port] = nib; tags.add(nib.get("tag"))
+        nib["tag"] = uniq_tag(nib.get("tag"))
+        tin.append(nib); by_port[port] = nib
         n = len((aib.get("settings") or {}).get("clients") or []) or (1 if ss_passwords(aib.get("settings") or {}) else 0)
         print(f"  ADD {proto} :{port} ({n} client(s))")
         continue
@@ -125,6 +133,14 @@ if conflicts:
     print("CONFLICTS:")
     for c in conflicts: print("  !! " + c)
     sys.exit(3)
+seen = set()
+for ib in tin:
+    t = ib.get("tag")
+    if not t:
+        continue
+    if t in seen:
+        ib["tag"] = uniq_tag(t)
+    seen.add(ib["tag"])
 json.dump(tgt, open(out_path, "w"), indent=2)
 print("  merged config written")
 PYEOF
