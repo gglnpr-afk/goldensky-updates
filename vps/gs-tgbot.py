@@ -204,19 +204,47 @@ def pick_links(user):
         sub = PUBLIC_BASE + sub
     return ss, vless, sub
 
+def link_label(lnk):
+    name = ""
+    if "#" in lnk:
+        name = urllib.parse.unquote(lnk.split("#", 1)[1])
+    name = name.split(" (")[0].replace("🚀", "").strip()
+    up = name.upper()
+    if "JP" in up or "JAPAN" in up:
+        return "🇯🇵 Japan"
+    if "SG" in up or "MARZ" in up or "SINGAPORE" in up:
+        return "🇸🇬 Singapore"
+    return name or "Server"
+
+def group_links(user):
+    ss_list, vless_list = [], []
+    for lnk in user.get("links") or []:
+        if lnk.startswith("ss://"):
+            ss_list.append((link_label(lnk), lnk))
+        elif lnk.startswith("vless://"):
+            vless_list.append((link_label(lnk), lnk))
+    sub = user.get("subscription_url") or ""
+    if sub and not sub.startswith("http"):
+        sub = PUBLIC_BASE + sub
+    return ss_list, vless_list, sub
+
 def key_message(user, fresh):
-    ss, vless, sub = pick_links(user)
+    ss_list, vless_list, sub = group_links(user)
     head = "✅ <b>Key ရပါပြီ!</b>" if fresh else "🔑 <b>သင့်ရဲ့ Key</b>"
     parts = [head,
              "📦 Data: <b>%dGB / တစ်ရက်</b> (နေ့တိုင်း ပြန်ပြည့်)" % KEY_GB,
              "📅 သက်တမ်း: %s အထိ" % fmt_date(user.get("expire")), ""]
-    if ss:
+    if ss_list:
         parts.append("🚀 <b>Shadowsocks</b> (အရင် စမ်းရန်):")
-        parts.append("<code>%s</code>" % html.escape(ss))
+        for label, lnk in ss_list:
+            parts.append("%s:" % label)
+            parts.append("<code>%s</code>" % html.escape(lnk))
         parts.append("")
-    if vless:
+    if vless_list:
         parts.append("🌐 <b>VLESS</b>:")
-        parts.append("<code>%s</code>" % html.escape(vless))
+        for label, lnk in vless_list:
+            parts.append("%s:" % label)
+            parts.append("<code>%s</code>" % html.escape(lnk))
         parts.append("")
     if sub:
         parts.append("🔗 <b>Subscription</b> (v2rayNG မှာ Import ရန်):")
