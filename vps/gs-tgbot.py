@@ -26,6 +26,7 @@ PUBLIC_BASE = CFG.get("PUBLIC_BASE", "").rstrip("/")
 KEY_GB = int(CFG.get("KEY_GB", "50"))
 KEY_DAYS = int(CFG.get("KEY_DAYS", "30"))
 ADMIN_ID = (CFG.get("ADMIN_ID") or "").strip()
+BANNER_PATH = "/opt/gs-bot/banner.png"
 TG = "https://api.telegram.org/bot" + BOT_TOKEN
 
 # ---------------- Telegram helpers ----------------
@@ -51,6 +52,45 @@ def answer_cb(cb_id, text=""):
         tg_call("answerCallbackQuery", {"callback_query_id": cb_id, "text": text}, timeout=10)
     except Exception:
         pass
+
+def tg_photo_upload(chat_id, caption, buttons):
+    """Upload the banner photo via multipart. Returns the Telegram result."""
+    boundary = "----gsbot%d" % int(time.time() * 1000)
+    with open(BANNER_PATH, "rb") as f:
+        img = f.read()
+    chunks = []
+    fields = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "HTML"}
+    if buttons:
+        fields["reply_markup"] = json.dumps({"inline_keyboard": buttons})
+    for k, v in fields.items():
+        chunks.append(("--" + boundary + "\r\n"
+                       "Content-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n" % (k, v)).encode())
+    chunks.append(("--" + boundary + "\r\n"
+                   "Content-Disposition: form-data; name=\"photo\"; filename=\"banner.png\"\r\n"
+                   "Content-Type: image/png\r\n\r\n").encode())
+    chunks.append(img)
+    chunks.append(("\r\n--" + boundary + "--\r\n").encode())
+    req = urllib.request.Request(TG + "/sendPhoto", data=b"".join(chunks),
+                                 headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+def set_commands():
+    base = [{"command": "start", "description": "ပြန်စရန်"},
+            {"command": "mykey", "description": "ကိုယ့် Key ကြည့်ရန်"},
+            {"command": "usage", "description": "အသုံးပြုမှု ကြည့်ရန်"}]
+    try:
+        tg_call("setMyCommands", {"commands": base, "scope": {"type": "default"}}, timeout=15)
+        tg_call("setChatMenuButton", {"menu_button": {"type": "commands"}}, timeout=15)
+        if ADMIN_ID:
+            tg_call("setMyCommands",
+                    {"commands": base + [{"command": "stats", "description": "Bot အခြေအနေ (Admin)"}],
+                     "scope": {"type": "chat", "chat_id": int(ADMIN_ID)}}, timeout=15)
+            tg_call("setChatMenuButton",
+                    {"chat_id": int(ADMIN_ID), "menu_button": {"type": "commands"}}, timeout=15)
+        print("commands menu set", flush=True)
+    except Exception as e:
+        print("setMyCommands failed:", e, file=sys.stderr)
 
 MENU = [[{"text": "🎁 50GB Key ရယူရန်", "callback_data": "claim"}],
         [{"text": "🔑 ကျွန်တော့် Key", "callback_data": "mykey"},
@@ -184,14 +224,19 @@ def usage_message(user):
     used = user.get("used_traffic") or 0
     limit = user.get("data_limit") or 0
     pct = (100.0 * used / limit) if limit else 0
+    filled = int(round(pct / 10.0))
+    if filled > 10:
+        filled = 10
+    bar = "█" * filled + "░" * (10 - filled)
     status = {"active": "✅ Active", "limited": "⛔ Limited (ဒီနေ့ ကုန်ပြီ)",
               "expired": "⌛ Expired", "disabled": "🚫 Disabled"}.get(user.get("status"), user.get("status"))
     return ("📊 <b>အသုံးပြုမှု</b>\n\n"
             "အခြေအနေ: %s\n"
             "သုံးပြီး: <b>%s</b> / %s (%.1f%%)\n"
+            "%s %.1f%%\n"
             "📅 သက်တမ်း: %s အထိ\n\n"
             "ℹ️ Data က နေ့တိုင်း သူ့အလိုလို ပြန်ပြည့်ပါတယ်" %
-            (status, fmt_bytes(used), fmt_bytes(limit), pct, fmt_date(user.get("expire"))))
+            (status, fmt_bytes(used), fmt_bytes(limit), pct, bar, pct, fmt_date(user.get("expire"))))
 
 def stats_message():
     users = bot_users()
@@ -284,6 +329,27 @@ def handle_usage(chat_id, tg_user):
         print("usage failed:", e, file=sys.stderr)
         send(chat_id, "⚠️ Server ဘက် အခက် ဖြစ်နေပါတယ်။ ခဏနေ ပြန် ကြိုးစားပါ")
 
+def send_welcome(chat_id):
+    text = welcome_text()
+    fid = STATE.get("banner_file_id")
+    try:
+        if fid:
+            tg_call("sendPhoto", {"chat_id": chat_id, "photo": fid, "caption": text,
+                                  "parse_mode": "HTML",
+                                  "reply_markup": {"inline_keyboard": MENU}}, timeout=20)
+            return
+        if os.path.exists(BANNER_PATH):
+            r = tg_photo_upload(chat_id, text, MENU)
+            photos = (r.get("result") or {}).get("photo") or []
+            if photos:
+                STATE["banner_file_id"] = photos[-1]["file_id"]
+                save_state(STATE)
+            return
+    except Exception as e:
+        print("banner send failed:", e, file=sys.stderr)
+        STATE.pop("banner_file_id", None)
+    send(chat_id, text, MENU)
+
 def handle_stats(chat_id, tg_user):
     if not ADMIN_ID or str(tg_user["id"]) != ADMIN_ID:
         send(chat_id, welcome_text(), MENU)
@@ -300,7 +366,7 @@ def process(update):
         chat_id = m["chat"]["id"]
         text = (m.get("text") or "").strip()
         if text.startswith("/start"):
-            send(chat_id, welcome_text(), MENU)
+            send_welcome(chat_id)
         elif text.startswith("/mykey"):
             handle_mykey(chat_id, m["from"])
         elif text.startswith("/usage"):
@@ -324,6 +390,7 @@ def process(update):
 def main():
     mz_login()
     print("bot started, marzban login OK", flush=True)
+    set_commands()
     while True:
         try:
             r = tg_call("getUpdates", {"offset": STATE["offset"], "timeout": 30,
