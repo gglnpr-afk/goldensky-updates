@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # GOLDENSKY Telegram Bot installer - issues 50GB/day keys from the Marzban
 # panel installed by setup-marzban-test.sh on THIS box.
-#   sudo bash setup-tgbot.sh
+#   sudo bash setup-tgbot.sh [ADMIN_TELEGRAM_ID]
 # The BotFather token is prompted for INSIDE this terminal (never leaves
 # the box). Re-running updates the bot code and restarts the service.
+# The optional ADMIN_TELEGRAM_ID enables the admin-only /stats command.
 set -euo pipefail
 [ "$(id -u)" = "0" ] || { echo "Run as root: sudo bash setup-tgbot.sh"; exit 1; }
 [ -f /opt/marzban/.env ] || { echo "!! Marzban not found on this box. Run the Marzban kit first."; exit 1; }
@@ -41,6 +42,7 @@ MZ_PASS = CFG["MZ_PASS"]
 PUBLIC_BASE = CFG.get("PUBLIC_BASE", "").rstrip("/")
 KEY_GB = int(CFG.get("KEY_GB", "50"))
 KEY_DAYS = int(CFG.get("KEY_DAYS", "30"))
+ADMIN_ID = (CFG.get("ADMIN_ID") or "").strip()
 TG = "https://api.telegram.org/bot" + BOT_TOKEN
 
 # ---------------- Telegram helpers ----------------
@@ -71,10 +73,19 @@ MENU = [[{"text": "🎁 50GB Key ရယူရန်", "callback_data": "claim"}]
         [{"text": "🔑 ကျွန်တော့် Key", "callback_data": "mykey"},
          {"text": "📊 အသုံးပြုမှု", "callback_data": "usage"}]]
 
-WELCOME = ("👋 မင်္ဂလာပါ <b>GOLDENSKY Free 50GB</b> Bot ပါ\n\n"
-           "ဒီ Bot ကနေ <b>တစ်ရက် 50GB</b> သုံးနိုင်တဲ့ Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
-           "50GB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။\n\n"
-           "စဖို့ အောက်က ခလုတ်ကို နှိပ်ပါ 👇")
+WELCOME_BODY = ("👋 မင်္ဂလာပါ <b>GOLDENSKY Free 50GB</b> Bot ပါ\n\n"
+                "ဒီ Bot ကနေ <b>တစ်ရက် 50GB</b> သုံးနိုင်တဲ့ Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
+                "50GB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။")
+WELCOME_TAIL = "စဖို့ အောက်က ခလုတ်ကို နှိပ်ပါ 👇"
+
+def welcome_text():
+    parts = [WELCOME_BODY]
+    try:
+        parts.append("👥 အသုံးပြုသူ စုစုပေါင်း: <b>%d</b> ယောက်" % len(bot_users()))
+    except Exception as e:
+        print("user count failed:", e, file=sys.stderr)
+    parts.append(WELCOME_TAIL)
+    return "\n\n".join(parts)
 
 # ---------------- Marzban helpers ----------------
 _mz_token = {"tok": None}
@@ -132,6 +143,13 @@ def mz_create_user(name, note):
 def mz_renew_user(name):
     body = {"expire": int(time.time()) + KEY_DAYS * 24 * 3600, "status": "active"}
     return mz_req("PUT", "/api/user/" + name, body)
+
+def mz_all_users():
+    r = mz_req("GET", "/api/users?offset=0&limit=1000")
+    return r.get("users") or []
+
+def bot_users():
+    return [u for u in mz_all_users() if (u.get("username") or "").startswith("tg_")]
 
 # ---------------- formatting ----------------
 def fmt_bytes(n):
@@ -191,6 +209,28 @@ def usage_message(user):
             "📅 သက်တမ်း: %s အထိ\n\n"
             "ℹ️ Data က နေ့တိုင်း သူ့အလိုလို ပြန်ပြည့်ပါတယ်" %
             (status, fmt_bytes(used), fmt_bytes(limit), pct, fmt_date(user.get("expire"))))
+
+def stats_message():
+    users = bot_users()
+    counts = {}
+    used = 0
+    life = 0
+    for u in users:
+        st = u.get("status") or "?"
+        counts[st] = counts.get(st, 0) + 1
+        used += u.get("used_traffic") or 0
+        life += u.get("lifetime_used_traffic") or 0
+    return ("📈 <b>Bot အခြေအနေ</b> (Admin သာ)\n\n"
+            "👥 Key ယူထားသူ: <b>%d</b> ယောက်\n"
+            "✅ Active: %d\n"
+            "⛔ Limited (ဒီနေ့ 50GB ကုန်): %d\n"
+            "⌛ Expired: %d\n"
+            "🚫 Disabled: %d\n\n"
+            "📦 Reset နောက်ပိုင်း သုံးပြီး (စုစုပေါင်း): <b>%s</b>\n"
+            "♾️ စတင်ချိန်မှ စုစုပေါင်း: <b>%s</b>" %
+            (len(users), counts.get("active", 0), counts.get("limited", 0),
+             counts.get("expired", 0), counts.get("disabled", 0),
+             fmt_bytes(used), fmt_bytes(life)))
 
 # ---------------- state (update offset + claim throttle) ----------------
 def load_state():
@@ -261,19 +301,31 @@ def handle_usage(chat_id, tg_user):
         print("usage failed:", e, file=sys.stderr)
         send(chat_id, "⚠️ Server ဘက် အခက် ဖြစ်နေပါတယ်။ ခဏနေ ပြန် ကြိုးစားပါ")
 
+def handle_stats(chat_id, tg_user):
+    if not ADMIN_ID or str(tg_user["id"]) != ADMIN_ID:
+        send(chat_id, welcome_text(), MENU)
+        return
+    try:
+        send(chat_id, stats_message())
+    except Exception as e:
+        print("stats failed:", e, file=sys.stderr)
+        send(chat_id, "⚠️ Stats ဖတ်လို့ မရပါ။ ခဏနေ ပြန် ကြိုးစားပါ")
+
 def process(update):
     if "message" in update:
         m = update["message"]
         chat_id = m["chat"]["id"]
         text = (m.get("text") or "").strip()
         if text.startswith("/start"):
-            send(chat_id, WELCOME, MENU)
+            send(chat_id, welcome_text(), MENU)
         elif text.startswith("/mykey"):
             handle_mykey(chat_id, m["from"])
         elif text.startswith("/usage"):
             handle_usage(chat_id, m["from"])
+        elif text.startswith("/stats"):
+            handle_stats(chat_id, m["from"])
         else:
-            send(chat_id, WELCOME, MENU)
+            send(chat_id, welcome_text(), MENU)
     elif "callback_query" in update:
         cb = update["callback_query"]
         chat_id = cb["message"]["chat"]["id"]
@@ -322,6 +374,10 @@ if [ -z "$TOKEN" ]; then
   read -rsp "Paste the bot token here (input hidden): " TOKEN; echo ""
 fi
 [ -n "$TOKEN" ] || { echo "!! Empty token. Aborting."; exit 1; }
+ADMIN_ID="${1:-}"
+if [ -z "$ADMIN_ID" ] && [ -f /opt/gs-bot/bot.env ]; then
+  ADMIN_ID=$(grep "^ADMIN_ID=" /opt/gs-bot/bot.env | cut -d= -f2- || true)
+fi
 cat > /opt/gs-bot/bot.env <<ENVEOF
 BOT_TOKEN=$TOKEN
 MZ_BASE=http://127.0.0.1:8000
@@ -330,6 +386,7 @@ MZ_PASS=$ADMIN_PASS
 PUBLIC_BASE=https://$DOMAIN:8443
 KEY_GB=50
 KEY_DAYS=30
+ADMIN_ID=$ADMIN_ID
 ENVEOF
 chmod 600 /opt/gs-bot/bot.env
 echo "OK: config written (/opt/gs-bot/bot.env, 600)"
@@ -386,5 +443,11 @@ else
   echo "             check the token and: journalctl -u gs-tgbot -n 20"
 fi
 echo "   Keys    : 50GB/day per Telegram user, auto-refill daily, 30-day expiry"
+if [ -n "$ADMIN_ID" ]; then
+  echo "   Stats   : send /stats to the bot (admin ID $ADMIN_ID only)"
+else
+  echo "   Stats   : re-run this installer with your Telegram ID as the"
+  echo "             argument to enable the admin-only /stats command"
+fi
 echo "   Test    : open the bot, tap Start, then the '50GB Key' button"
 echo "=================================================================="
