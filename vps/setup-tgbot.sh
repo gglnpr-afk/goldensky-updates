@@ -101,7 +101,8 @@ def set_commands():
         tg_call("setChatMenuButton", {"menu_button": {"type": "commands"}}, timeout=15)
         if ADMIN_ID:
             tg_call("setMyCommands",
-                    {"commands": base + [{"command": "stats", "description": "Bot အခြေအနေ (Admin)"}],
+                    {"commands": base + [{"command": "stats", "description": "Bot အခြေအနေ (Admin)"},
+                                         {"command": "broadcast", "description": "လူအားလုံးဆီ စာပို့ (Admin)"}],
                      "scope": {"type": "chat", "chat_id": int(ADMIN_ID)}}, timeout=15)
             tg_call("setChatMenuButton",
                     {"chat_id": int(ADMIN_ID), "menu_button": {"type": "commands"}}, timeout=15)
@@ -377,12 +378,99 @@ def handle_stats(chat_id, tg_user):
         print("stats failed:", e, file=sys.stderr)
         send(chat_id, "⚠️ Stats ဖတ်လို့ မရပါ။ ခဏနေ ပြန် ကြိုးစားပါ")
 
+# ---------------- broadcast (admin only) ----------------
+BC_TTL = 600
+
+def bc_pending():
+    p = STATE.get("broadcast")
+    if p and time.time() - p.get("ts", 0) > BC_TTL:
+        STATE["broadcast"] = None
+        save_state(STATE)
+        return None
+    return p
+
+def bc_recipient_count():
+    try:
+        return len(bot_users())
+    except Exception:
+        return None
+
+def handle_broadcast_cmd(chat_id, tg_user):
+    if not ADMIN_ID or str(tg_user["id"]) != ADMIN_ID:
+        send(chat_id, welcome_text(), MENU)
+        return
+    STATE["broadcast"] = {"step": "await_text", "ts": time.time()}
+    save_state(STATE)
+    n = bc_recipient_count()
+    who = ("လူ %d ယောက်လုံး (Key ယူထားသူတွေ)" % n) if n is not None else "Key ယူထားသူတွေ အားလုံး"
+    send(chat_id, "📢 <b>Broadcast</b>\n\nပို့ချင်တဲ့ စာကို ဒီမှာ ရိုက်ပို့ပါ — %s ဆီ ရောက်ပါမယ်။\n"
+                  "မပို့ချင်ရင် /cancel လို့ ပို့ပါ" % who)
+
+def bc_capture_text(chat_id, text):
+    draft = "📢 <b>အသိပေးချက်</b>\n\n" + html.escape(text)
+    STATE["broadcast"] = {"step": "confirm", "ts": time.time(), "text": draft}
+    save_state(STATE)
+    n = bc_recipient_count()
+    label = ("✅ ပို့မယ် (%d ယောက်)" % n) if n is not None else "✅ ပို့မယ်"
+    btns = [[{"text": label, "callback_data": "bc_send"},
+             {"text": "❌ မပို့ဘူး", "callback_data": "bc_cancel"}]]
+    send(chat_id, "📢 <b>Broadcast Preview</b> — ဒီစာ ရောက်သွားပါမယ်:\n\n" + draft, btns)
+
+def bc_send_one(chat_id, text):
+    try:
+        tg_call("sendMessage", {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+                                "disable_web_page_preview": True}, timeout=15)
+        return True
+    except Exception:
+        return False
+
+def bc_do_send(chat_id):
+    p = STATE.get("broadcast") or {}
+    draft = p.get("text")
+    STATE["broadcast"] = None
+    save_state(STATE)
+    if not draft:
+        send(chat_id, "⚠️ Broadcast စာ မရှိတော့ပါ။ /broadcast ကနေ ပြန်စပါ")
+        return
+    try:
+        users = bot_users()
+    except Exception as e:
+        print("broadcast user list failed:", e, file=sys.stderr)
+        send(chat_id, "⚠️ User စာရင်း ဖတ်မရပါ။ ခဏနေ /broadcast ကနေ ပြန်စပါ")
+        return
+    ok = fail = 0
+    for u in users:
+        uname = u.get("username") or ""
+        if not uname[3:].isdigit():
+            continue
+        if bc_send_one(int(uname[3:]), draft):
+            ok += 1
+        else:
+            fail += 1
+        time.sleep(0.05)
+    send(chat_id, "📢 <b>Broadcast ပြီးပါပြီ</b>\n\n"
+                  "✅ ရောက်သူ: %d ယောက်\n"
+                  "❌ မရောက် (Bot ကို Block ထားသူ စသည်): %d ယောက်" % (ok, fail))
+
+def bc_cancel(chat_id):
+    STATE["broadcast"] = None
+    save_state(STATE)
+    send(chat_id, "❌ Broadcast ကို ဖျက်လိုက်ပါပြီ")
+
 def process(update):
     if "message" in update:
         m = update["message"]
         chat_id = m["chat"]["id"]
         text = (m.get("text") or "").strip()
-        if text.startswith("/start"):
+        pend = bc_pending()
+        is_admin = bool(ADMIN_ID) and str(m["from"]["id"]) == ADMIN_ID
+        if text.startswith("/broadcast"):
+            handle_broadcast_cmd(chat_id, m["from"])
+        elif text.startswith("/cancel") and pend and is_admin:
+            bc_cancel(chat_id)
+        elif pend and pend.get("step") == "await_text" and is_admin and text and not text.startswith("/"):
+            bc_capture_text(chat_id, text)
+        elif text.startswith("/start"):
             send_welcome(chat_id)
         elif text.startswith("/mykey"):
             handle_mykey(chat_id, m["from"])
@@ -403,6 +491,12 @@ def process(update):
             handle_mykey(chat_id, cb["from"])
         elif data == "usage":
             handle_usage(chat_id, cb["from"])
+        elif data == "bc_send":
+            if ADMIN_ID and str(cb["from"]["id"]) == ADMIN_ID:
+                bc_do_send(chat_id)
+        elif data == "bc_cancel":
+            if ADMIN_ID and str(cb["from"]["id"]) == ADMIN_ID:
+                bc_cancel(chat_id)
 
 def main():
     mz_login()
