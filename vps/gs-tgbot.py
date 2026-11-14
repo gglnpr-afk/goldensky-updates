@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# GOLDENSKY Telegram bot - issues 50GB/day Marzban keys.
+# GOLDENSKY Telegram bot - issues 5GB/day trial Marzban keys (paid keys via @BlackRain03).
 # Stdlib only (works on AlmaLinux python3.6+). Config: /opt/gs-bot/bot.env
 import json, os, sys, time, html, urllib.request, urllib.parse, urllib.error
 
@@ -93,13 +93,17 @@ def set_commands():
     except Exception as e:
         print("setMyCommands failed:", e, file=sys.stderr)
 
-MENU = [[{"text": "🎁 50GB Key ရယူရန်", "callback_data": "claim"}],
+BUY_URL = "https://t.me/BlackRain03"
+CLAIM_LABEL = "🎁 %dGB အစမ်း ရယူရန်" % KEY_GB
+MENU = [[{"text": CLAIM_LABEL, "callback_data": "claim"},
+         {"text": "💰 ကီးဝယ်ယူရန်", "url": BUY_URL}],
         [{"text": "🔑 ကျွန်တော့် Key", "callback_data": "mykey"},
          {"text": "📊 အသုံးပြုမှု", "callback_data": "usage"}]]
 
-WELCOME_BODY = ("👋 မင်္ဂလာပါ <b>GOLDENSKY Free 50GB</b> Bot ပါ\n\n"
-                "ဒီ Bot ကနေ <b>တစ်ရက် 50GB</b> သုံးနိုင်တဲ့ Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
-                "50GB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။")
+WELCOME_BODY = ("👋 မင်္ဂလာပါ <b>GOLDENSKY</b> Bot ပါ\n\n"
+                "ဒီ Bot ကနေ <b>တစ်ရက် %dGB အစမ်း</b> Server Key ကို အခမဲ့ ရယူနိုင်ပါတယ်။ "
+                "%dGB ကုန်ရင် နောက်နေ့ ပြန်ပြည့်ပါတယ် (Key အဟောင်းပဲ ဆက်သုံးရတာပါ)။\n\n"
+                "💰 <b>ပိုသုံးချင်ရင်</b> အခပေး Key ကို @BlackRain03 မှာ ဝယ်ယူနိုင်ပါတယ်။") % (KEY_GB, KEY_GB)
 WELCOME_TAIL = "စဖို့ အောက်က ခလုတ်ကို နှိပ်ပါ 👇"
 
 def welcome_text():
@@ -219,6 +223,8 @@ def key_message(user, fresh):
         parts.append("<code>%s</code>" % html.escape(sub))
         parts.append("")
     parts.append("📌 သုံးနည်း: Key ကို copy လုပ်ပြီး GOLDENSKY App (သို့ v2rayNG) မှာ paste ထည့် → Connect")
+    parts.append("")
+    parts.append("💰 အစမ်း %dGB ထက် ပိုသုံးချင်ရင် အခပေး Key ကို @BlackRain03 မှာ ဝယ်နိုင်ပါတယ်" % KEY_GB)
     return "\n".join(parts)
 
 def usage_message(user):
@@ -252,12 +258,12 @@ def stats_message():
     return ("📈 <b>Bot အခြေအနေ</b> (Admin သာ)\n\n"
             "👥 Key ယူထားသူ: <b>%d</b> ယောက်\n"
             "✅ Active: %d\n"
-            "⛔ Limited (ဒီနေ့ 50GB ကုန်): %d\n"
+            "⛔ Limited (ဒီနေ့ %dGB ကုန်): %d\n"
             "⌛ Expired: %d\n"
             "🚫 Disabled: %d\n\n"
             "📦 Reset နောက်ပိုင်း သုံးပြီး (စုစုပေါင်း): <b>%s</b>\n"
             "♾️ စတင်ချိန်မှ စုစုပေါင်း: <b>%s</b>" %
-            (len(users), counts.get("active", 0), counts.get("limited", 0),
+            (len(users), counts.get("active", 0), KEY_GB, counts.get("limited", 0),
              counts.get("expired", 0), counts.get("disabled", 0),
              fmt_bytes(used), fmt_bytes(life)))
 
@@ -310,7 +316,7 @@ def handle_mykey(chat_id, tg_user):
     try:
         user = mz_get_user(uname_for(tg_user))
         if not user:
-            send(chat_id, "Key မရှိသေးပါ။ '🎁 50GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
+            send(chat_id, "Key မရှိသေးပါ။ '%s' ကို နှိပ်ပါ" % CLAIM_LABEL, MENU)
             return
         if user.get("status") == "expired":
             user = mz_renew_user(uname_for(tg_user))
@@ -323,7 +329,7 @@ def handle_usage(chat_id, tg_user):
     try:
         user = mz_get_user(uname_for(tg_user))
         if not user:
-            send(chat_id, "Key မရှိသေးပါ။ '🎁 50GB Key ရယူရန်' ကို နှိပ်ပါ", MENU)
+            send(chat_id, "Key မရှိသေးပါ။ '%s' ကို နှိပ်ပါ" % CLAIM_LABEL, MENU)
             return
         send(chat_id, usage_message(user), MENU)
     except Exception as e:
