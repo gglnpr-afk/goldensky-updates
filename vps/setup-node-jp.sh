@@ -6,14 +6,23 @@
 # if another panel's node cert is present, or if Docker cannot be installed.
 #   usage: sudo bash setup-node-jp.sh <CERT_B64 from add-node-jp.sh>
 set -u
-[ "$(id -u)" = "0" ] || { echo "run as root: sudo bash setup-node-jp.sh <CERT_B64>"; exit 1; }
-B64="${1:-}"
-[ -n "$B64" ] || { echo "usage: sudo bash setup-node-jp.sh <CERT_B64 from add-node-jp.sh>"; exit 1; }
+[ "$(id -u)" = "0" ] || { echo "run as root: sudo bash setup-node-jp.sh"; exit 1; }
 PANEL_IP="83.147.235.168"
 
 # ---------- certificate ----------
-echo "$B64" | tr -d ' \t\r\n' | base64 -d > /tmp/gs-node-cert.pem 2>/dev/null \
-  || { echo "!! certificate base64 decode failed - copy the whole line again"; exit 1; }
+# Preferred source: /root/gs-node-cert.pem (sent box-to-box with scp - no
+# clipboard involved). Fallback: the base64 line passed as $1.
+if [ -n "${1:-}" ]; then
+  echo "$1" | tr -d ' \t\r\n' | base64 -d > /tmp/gs-node-cert.pem 2>/dev/null \
+    || { echo "!! certificate base64 decode failed - copy the whole line again"; exit 1; }
+elif [ -f /root/gs-node-cert.pem ]; then
+  cp /root/gs-node-cert.pem /tmp/gs-node-cert.pem
+  echo "OK: using /root/gs-node-cert.pem (scp copy)"
+else
+  echo "usage: sudo bash setup-node-jp.sh [CERT_B64]"
+  echo "   or first copy gs-node-cert.pem from the Marzban box to /root/ here (scp)"
+  exit 1
+fi
 grep -q "BEGIN CERTIFICATE" /tmp/gs-node-cert.pem \
   || { echo "!! decoded text is not a certificate - copy the whole line again"; exit 1; }
 if command -v openssl >/dev/null 2>&1; then
