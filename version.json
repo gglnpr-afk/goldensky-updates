@@ -1,6 +1,6 @@
 {
-  "version_code": 454,
-  "version_name": "1.0.37",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.37/goldensky-1.0.37.apk",
-  "notes": "HY2 အတွက် Obfs (Salamander) + Port Hopping support အသစ် ထည့်ထားပါတယ် — DPI ကျော် HY2 key အသစ်တွေ GOLDENSKY မှာ သုံးလို့ ရပါပြီ။"
+  "version_code": 457,
+  "version_name": "1.0.38",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.38/goldensky-1.0.38-splash-arm64.apk",
+  "notes": "Violet Nebula Design အသစ် + TUIC, AnyTLS, WireGuard support အသစ်တွေ ထည့်ထားပါတယ် — Chain Proxy နဲ့ TLS Fragment လည်း ပါပါတယ်။"
 }
