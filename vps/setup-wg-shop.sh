@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup-wg-shop.sh — WG customer-key shop on wg500 / UDP 500 (FirstByte JP)
-# Base server (created only if missing) + add-wg minter + gs-wg-guard (quota/expiry, cron 5 min).
+# Base server (created only if missing) + add-wg minter + del-wg remover + gs-wg-guard (quota/expiry, cron 5 min).
 # Adds wg500 only; never touches Xray / TUIC / Hysteria services.
 # Usage: bash setup-wg-shop.sh [HOST]   (default jp.mobileking.vip)
 # HOST must be a DNS A record pointing at this server, DNS-only (grey cloud) -
@@ -159,6 +159,61 @@ if [ "$EXP" -gt 0 ]; then echo "Expires: $(date -d "@$EXP" '+%Y-%m-%d')"; fi
 EOF_ADDWG
 chmod +x /usr/local/bin/add-wg
 
+cat > /usr/local/bin/del-wg <<'EOF_DELWG'
+#!/bin/bash
+# del-wg <name> — delete a customer WireGuard key (wg500, UDP 500)
+# Removes the peer live + from wg500.conf, drops its registry + usage lines,
+# and deletes its saved key file, so its 10.66.0.x address is freed for reuse.
+# The owner peer is never in clients.db, so it cannot be deleted this way.
+# Usage: del-wg <name>   (asks for confirmation unless DEL_WG_FORCE=1)
+set -e
+umask 077
+IFACE=wg500
+WGCONF="${WGCONF:-/etc/wireguard/wg500.conf}"
+REG="${REG:-/etc/wireguard/clients.db}"
+KEYDIR="${KEYDIR:-/root/wg-keys}"
+USAGEDIR="${USAGEDIR:-/var/lib/gs-wg}"
+DB="$USAGEDIR/usage.tsv"
+
+NAME="${1:-}"
+[ -n "$NAME" ] || { echo "Usage: del-wg <name>"; exit 1; }
+printf %s "$NAME" | grep -Eq '^[A-Za-z0-9_-]+$' || { echo "Name: A-Z a-z 0-9 _ - only"; exit 1; }
+[ -f "$WGCONF" ] || { echo "$WGCONF not found - run setup-wg-shop.sh first"; exit 1; }
+[ -f "$REG" ] || { echo "No customers yet ($REG missing)"; exit 1; }
+
+LINE=$(awk -F'|' -v n="$NAME" '$1==n{print; exit}' "$REG")
+[ -n "$LINE" ] || { echo "No customer named '$NAME'"; exit 1; }
+PUB=$(printf %s "$LINE" | cut -d'|' -f2)
+IP=$(printf %s "$LINE" | cut -d'|' -f3)
+STATE=$(printf %s "$LINE" | cut -d'|' -f7)
+
+if [ "${DEL_WG_FORCE:-0}" != "1" ]; then
+  printf "Delete WG key '%s' (%s, %s)? [y/N] " "$NAME" "$IP" "$STATE"
+  read -r ANS
+  [ "$ANS" = "y" ] || [ "$ANS" = "Y" ] || { echo "Cancelled."; exit 0; }
+fi
+
+# --- drop the peer live + from the persisted conf (same block split as add-wg) ---
+wg set "$IFACE" peer "$PUB" remove 2>/dev/null || true
+PUB="$PUB" CONF="$WGCONF" python3 - <<'PYEOF'
+import os
+pub = os.environ["PUB"]; path = os.environ["CONF"]
+blocks = open(path).read().split("\n\n")
+kept = [b for b in blocks if ("PublicKey = " + pub) not in b]
+open(path, "w").write("\n\n".join(kept).rstrip() + "\n")
+PYEOF
+
+# --- registry + usage accounting + saved key file ---
+awk -F'|' -v n="$NAME" '$1!=n' "$REG" > "$REG.tmp" && mv "$REG.tmp" "$REG"
+if [ -f "$DB" ]; then
+  awk -F'\t' -v p="$PUB" '$1!=p' "$DB" > "$DB.tmp" && mv "$DB.tmp" "$DB"
+fi
+rm -f "$KEYDIR/$NAME.txt"
+
+echo "Deleted WG key '$NAME' ($IP) — address freed, peer removed."
+EOF_DELWG
+chmod +x /usr/local/bin/del-wg
+
 cat > /usr/local/bin/gs-wg-guard.sh <<'EOF_GUARD'
 #!/bin/bash
 # gs-wg-guard.sh — quota + expiry enforcement for wg500 customers (run from cron, every 5 min)
@@ -284,6 +339,7 @@ echo ""
 echo "=== WG SHOP READY (wg500, UDP 500, endpoint $HOST) ==="
 echo "Mint a customer key : add-wg <name> [GB=100] [days=30]"
 echo "Renew a key         : add-wg <name> [GB] [days]   (run it with the same name again)"
+echo "Delete a key        : del-wg <name>   (asks first; DEL_WG_FORCE=1 to skip the prompt)"
 echo "Usage / status      : cat /root/wg-usage.txt"
 echo "Customer key files  : /root/wg-keys/<name>.txt"
 echo "The owner key (WG500-JP, 10.66.0.2) is unmanaged - no quota, no expiry."
