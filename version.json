@@ -1,6 +1,6 @@
 {
-  "version_code": 466,
-  "version_name": "1.0.43",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.43/goldensky-1.0.43.apk",
-  "notes": "Update install မရတဲ့ ပြဿနာ ပြင်ထားတယ် — file အရွယ် 69 MB ပြန်ဖြစ်လို့ ဖုန်းတိုင်း (model အနိမ့်ပါ) update ရပြီ။ TUIC / AnyTLS / WireGuard ကို နောက် update မှာ ပြန်ထည့်ပေးမယ်။"
+  "version_code": 467,
+  "version_name": "1.0.44",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.44/goldensky-1.0.44.apk",
+  "notes": "Server list auto-refresh ပြင်ထားတယ် — app ဖွင့်တိုင်း / Connect လုပ်တိုင်း server အသစ်တွေ သူ့အလိုလို ရောက်လာမယ်၊ Refresh နှိပ်စရာ မလိုတော့ဘူး။"
 }
