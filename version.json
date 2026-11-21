@@ -1,6 +1,6 @@
 {
-  "version_code": 462,
-  "version_name": "1.0.41",
-  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.41/goldensky-1.0.41-b462.apk",
-  "notes": "Home server card အသစ် — card ကို နှိပ်ရင် server list က Home မှာပဲ ပွင့်ပြီး တန်းရွေးလို့ရပြီ။ StarlinkWifi server အသစ်တွေလည်း Refresh နဲ့ ရောက်လာမယ်။"
+  "version_code": 464,
+  "version_name": "1.0.42",
+  "apk_url": "https://github.com/gglnpr-afk/goldensky-updates/releases/download/V1.0.42/goldensky-1.0.42.apk",
+  "notes": "Update download ပြင်ထားတယ် — လိုင်းပြတ်ရင် ဆက်ဆွဲပြီး file ပြည့်မှ install လုပ်မယ်။ App file အရွယ် 65 MB အထိ သေးသွားလို့ ဖုန်းတိုင်း update ရပြီ။"
 }
